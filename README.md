@@ -14,7 +14,9 @@
 
 A Windows desktop application for organizing FLAC, MP3, AAC, lossless albums, DSD/SACD images and supported encrypted downloads. Scan first, review the plan, and write an organized library to a separate folder while keeping the source files intact.
 
-> The current GUI is in Simplified Chinese. Both project READMEs are available in English and Chinese. The original project source is MIT-licensed; the full application also uses GPL/LGPL and other third-party components. See [License and commercial use](#license-and-commercial-use).
+**v1.4.0** adds iPod / iPhone / iPad exports, optional separate original archives and an English interface. Choose the language in **Advanced → Appearance**, then save and restart. Initial processing defaults remain those of v1.1.
+
+Download the portable [Windows EXE](https://github.com/jasonfreese36/music-organizer/releases/latest/download/MusicOrganizer.exe) from [Releases](https://github.com/jasonfreese36/music-organizer/releases). Matching application source, third-party corresponding sources and checksums accompany the binary. The original source is MIT; the complete application also contains GPL/LGPL components. See [License and commercial use](#license-and-commercial-use).
 
 ## Highlights
 
@@ -30,8 +32,8 @@ A Windows desktop application for organizing FLAC, MP3, AAC, lossless albums, DS
 This repository contains the source, native decoder sources, licenses and build scripts. To run locally, follow [Build from source](#build-from-source). A packaged build produces a portable `MusicOrganizer.exe` with its Python runtime and native tools included.
 
 1. Select a music source and a **separate** destination directory.
-2. Click **只读扫描** (read-only scan). Review files and correct release information or choose artwork if needed.
-3. Click **开始整理** (start organizing). Successful tracks go into the destination library; source files remain in place.
+2. Click **Read-only scan**. Review files and correct release information or choose artwork if needed.
+3. Click **Organize**. Successful tracks go into the destination library; source files remain in place.
 4. Review `Needs Review/Review.csv` and `Library Records/Latest Run.json`. Correct uncertain items and run again against the same managed destination.
 
 Online matching is optional. A service may not have a particular edition or cover; uncertain matches are reported instead of being presented as verified release data.
@@ -57,6 +59,22 @@ Organized/
 ```
 
 Top-level folder names are English. Artist, album and song names retain their original language. Singles and recovered tracks are organized under `Albums` using their release information.
+
+### Apple device exports
+
+Open **Advanced → Apple devices** and select a separate, empty destination. The output is a folder to import into Apple Music/iTunes, then sync with Apple Devices/iTunes; this application does not write an iPod database or sync hardware directly.
+
+| Preset | Newly encoded output | Limits |
+|---|---|---|
+| iPod universal / shuffle | MP3, 256 kbps; 192 kbps Save space | Mono/stereo, 32 / 44.1 / 48 kHz; ID3v2.3 |
+| iPod classic / nano | AAC-LC, or ALAC for lossless sources | Mono/stereo; ALAC capped at 16-bit / 44.1 kHz |
+| iPhone / iPad | AAC-LC, or ALAC for lossless sources | Mono/stereo; ALAC capped at 24-bit / 48 kHz |
+
+Compatible MP3/AAC tracks can retain their encoded audio; Save space re-encodes lossy sources above 192 kbps. Incompatible codecs, high sample rates, multichannel audio and AAC profiles are converted. Device constraints take precedence over custom rules. The import folder contains **MP3/M4A audio only**, with embedded JPEG covers (up to 600 px for iPod, 1000 px for iOS). Reports, indexes and playlists go to a separate sibling `<destination> - Records` folder. An existing destination with incompatible or non-audio files is rejected without deleting anything.
+
+**Original archives** defaults to **No extra archive**. Choose **Save in a separate folder** to archive DSD/SACD ISO, CUE images, encrypted files and ordinary audio originals in an independent folder, with byte verification. Optional source artwork/booklets follow the existing archive switch. Archive, report, source and device output paths cannot overlap. Source files are retained in both modes. Archive paths are excluded from exported reusable profiles.
+
+Device generations differ. Check Apple's [iPod classic specifications](https://support.apple.com/en-ca/112601), [iPod nano specifications](https://support.apple.com/en-is/112039), and [lossless audio guidance](https://support.apple.com/en-euro/118295). See Apple's [Windows import instructions](https://support.apple.com/en-mo/guide/music-windows/mus3081/windows) and [device sync guide](https://support.apple.com/en-gb/guide/devices-windows/mchlbf6a1fab/1.5/windows/10). Verification uses generated audio and packaged-EXE tests; physical-device syncing has not been tested.
 
 ## Supported encrypted audio
 
@@ -121,7 +139,11 @@ To create the portable application:
 .\.venv\Scripts\python.exe build.py --output dist
 ```
 
+The default builder uses Nuitka 4.3.5 and GCC with **`-O3` and LTO**, and checks the compiler log for both flags. It produces a native one-file application and a verified local cache for bundled tools. First build downloads the pinned compiler SDK. Go's native reader uses Go's normal optimizations and stripped symbols; Go does not have an `-O3` flag. `--compiler pyinstaller` remains available as a bytecode-packaging fallback and is not labeled an O3 build. Build metadata and compiler logs accompany local outputs; processing speed still depends on decoding, disk speed and online services.
+
 Outputs include `MusicOrganizer.exe`, a source ZIP, documentation and checksums. Packaging the program does **not** remove the redistribution obligations of its dependencies; read [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) before distributing binaries.
+
+Before public binary distribution, run `python source_bundle.py --output dist` to produce the pinned third-party source attachment. See [corresponding-source and rebuilding instructions](docs/CORRESPONDING_SOURCES.md).
 
 ### Tests
 
@@ -131,9 +153,15 @@ These integration tests generate their own audio in fresh output directories. Th
 .\.venv\Scripts\python.exe test_e2e.py --root test-output/e2e
 .\.venv\Scripts\python.exe test_advanced.py --root test-output/advanced
 .\.venv\Scripts\python.exe test_platforms.py --root test-output/platforms
+.\.venv\Scripts\python.exe test_apple.py --root test-output/apple
+.\.venv\Scripts\python.exe test_i18n.py
+.\.venv\Scripts\python.exe main.py --check-gui --language en --report Gui-English.json
+.\.venv\Scripts\python.exe main.py --check-gui --language zh_CN --report Gui-Chinese.json
 ```
 
 Use a new root for each run. Optional real-file checks belong outside version control. Online-source tests are separate because service availability, regional responses and rate limits vary.
+
+`--check-gui` opens the actual GUI, checks its viewable geometry, page navigation, device/archive controls, theme switching and restart command, then exits. It uses temporary preferences and does not read a music library. Run the same flags against the packaged EXE to verify the compiled UI.
 
 An optional GitHub Actions workflow template is provided at [docs/ci/windows-tests.yml](docs/ci/windows-tests.yml). A maintainer can copy it to `.github/workflows/` to enable hosted tests.
 
@@ -155,7 +183,7 @@ The same flags work with a packaged `MusicOrganizer.exe`. Use `--settings Profil
 - Encrypted-file scans inspect container information; final success is determined during decoding and audio verification.
 - Library processing covers all scanned files; the interactive preview is limited to 6,000 rows and supports filtering.
 - Vinyl-rip classification uses explicit source/release labels. A high sample rate alone is not treated as proof of an LP source.
-- DSD-to-PCM is a conversion, so original DSD/SACD material is retained. A FLAC copy does not replace the DSD archive.
+- DSD-to-PCM is a conversion. Regular-library mode archives DSD/SACD; Apple presets optionally archive originals in a separate folder. Source files are always retained.
 
 ## License and commercial use
 

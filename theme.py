@@ -1,4 +1,5 @@
 """Paired light/dark colors and live accent recoloring, without rebuilding app state."""
+from i18n import tr
 import colorsys
 import sys
 import tkinter as tk
@@ -6,8 +7,8 @@ from tkinter import ttk
 
 import customtkinter as ctk
 
-MODES={"跟随系统":"system","浅色":"light","深色":"dark"}
-ACCENTS={"鸢尾紫":"violet","海湾蓝":"blue","松石绿":"teal","蔷薇粉":"rose","琥珀橙":"amber"}
+MODES={tr('跟随系统'):"system",tr('浅色'):"light",tr('深色'):"dark"}
+ACCENTS={tr('鸢尾紫'):"violet",tr('海湾蓝'):"blue",tr('松石绿'):"teal",tr('蔷薇粉'):"rose",tr('琥珀橙'):"amber"}
 BASES={"violet":("#6556DC","#A89BFF"),"blue":("#3068CE","#8AB5FF"),"teal":("#187F77","#6BD1BD"),
        "rose":("#B34B77","#F1A0C2"),"amber":("#A56324","#F1BB7E")}
 _accent="violet"

@@ -1,3 +1,4 @@
+from i18n import tr
 import hashlib
 import base64
 import io
@@ -37,6 +38,12 @@ KEY_ALIASES = {"album_artist": "albumartist", "album artist": "albumartist",
 
 def resource(name):
     base = Path(getattr(sys, "_MEIPASS", Path(__file__).parent))
+    relative=Path(name)
+    if relative.parts and relative.parts[0]=="tools" and os.environ.get("MUSIC_ORGANIZER_TOOLS"):
+        return Path(os.environ["MUSIC_ORGANIZER_TOOLS"]).expanduser().resolve().joinpath(*relative.parts[1:])
+    if relative.parts and relative.parts[0]=="tools" and not (base/"resources/tools").is_dir():
+        from runtime_tools import unpack_tools
+        return unpack_tools(base/"resources/NativeTools.zip").joinpath(*relative.parts[1:])
     return base / "resources" / name
 
 
@@ -59,7 +66,7 @@ class Tools:
                                        ("ncmdump", self.ncmdump, "--version"),
                                        ("SACD Extract", self.sacd, "--version"),("PlatformAudio",self.platformaudio,"--self-test")):
                 if not path.is_file():
-                    raise FileNotFoundError(f"缺少已打包的工具 {name}")
+                    raise FileNotFoundError(tr('缺少已打包的工具 {0}').format(name))
                 output = self.run([path, option], cancel, cwd=folder)
                 versions[name] = output.decode("utf-8", "replace").strip()[:260]
         return versions
@@ -75,7 +82,7 @@ class Tools:
                 while True:
                     cancel.check()
                     if timeout and time.monotonic() - started > timeout:
-                        raise TimeoutError(f"工具运行超时 {Path(args[0]).name}")
+                        raise TimeoutError(tr('工具运行超时 {0}').format(Path(args[0]).name))
                     try:
                         stdout, stderr = process.communicate(input=input_data,timeout=0.2)
                         break
@@ -87,7 +94,7 @@ class Tools:
                 raise
         if process.returncode:
             message = (stderr + b"\n" + stdout).decode("utf-8", "replace").strip()
-            raise ValueError(f"{Path(args[0]).name} 退出码 {process.returncode}\n{message[-3500:]}")
+            raise ValueError(tr('{0} 退出码 {1}\n{2}').format(Path(args[0]).name, process.returncode, message[-3500:]))
         cancel.check()
         return stdout
 
@@ -100,13 +107,13 @@ class Tools:
                         "-show_streams", "-show_format", "-of", "json", path], cancel)
         doc = json.loads(raw)
         if not doc.get("streams"):
-            raise ValueError("文件中没有可读取的音频流")
+            raise ValueError(tr('文件中没有可读取的音频流'))
         stream = doc["streams"][0]
         duration = float(stream.get("duration") or doc.get("format", {}).get("duration") or 0)
         profile = Profile(stream["codec_name"], int(stream.get("sample_rate") or 0),
                           int(stream.get("channels") or 0),
                           int(stream.get("bits_per_raw_sample") or stream.get("bits_per_sample") or 0),
-                          duration, stream.get("channel_layout", ""),int(stream.get("bit_rate") or 0))
+                          duration, stream.get("channel_layout", ""),int(stream.get("bit_rate") or 0),str(stream.get("profile") or ""))
         tags = dict(doc.get("format", {}).get("tags") or {})
         tags.update(stream.get("tags") or {})
         return profile, canonical(tags)
@@ -121,7 +128,7 @@ class Tools:
                        "-f", "hash", "-hash", "sha256", "-"], cancel)
         result = raw.decode("ascii").strip().split("=")[-1]
         if not re.fullmatch(r"[0-9a-fA-F]{64}", result):
-            raise ValueError("音频解码校验未返回有效结果")
+            raise ValueError(tr('音频解码校验未返回有效结果'))
         with self.hash_lock:
             self.hash_cache[key] = result
         return result
@@ -131,11 +138,11 @@ class Tools:
                      "-f","hash","-hash","sha256","-"],cancel).decode("ascii","replace")
         fields={k.strip():v.strip() for line in raw.splitlines() if "=" in line for k,v in [line.split("=",1)]}
         digest=fields.get("SHA256","")
-        if not re.fullmatch(r"[0-9a-fA-F]{64}",digest):raise ValueError("完整解码校验未返回音频摘要")
+        if not re.fullmatch(r"[0-9a-fA-F]{64}",digest):raise ValueError(tr('完整解码校验未返回音频摘要'))
         micros=fields.get("out_time_us","")
         if micros.isdigit() and (profile.lossless or path.suffix.casefold() in (".mp3",".m4a")):
             decoded=float(micros)/1e6
-            if decoded<=0 or abs(decoded-profile.seconds)>max(.3,profile.seconds*.005):raise ValueError("解密音频的实际解码时长与文件信息不一致")
+            if decoded<=0 or abs(decoded-profile.seconds)>max(.3,profile.seconds*.005):raise ValueError(tr('解密音频的实际解码时长与文件信息不一致'))
         st=path.stat()
         with self.hash_lock:self.hash_cache[(str(path),st.st_size,st.st_mtime_ns)]=digest
         return digest
@@ -149,7 +156,7 @@ class Tools:
         raw = self.ff(["-i", path, "-map", "0:a:0", "-c:a", "copy", "-bsf:a", "aac_adtstoasc", "-f", "hash", "-hash", "sha256", "-"], cancel)
         result = raw.decode("ascii").strip().split("=")[-1]
         if not re.fullmatch(r"[0-9a-fA-F]{64}", result):
-            raise ValueError("编码音频校验未返回有效结果")
+            raise ValueError(tr('编码音频校验未返回有效结果'))
         with self.hash_lock:
             self.hash_cache[key] = result
         return result
@@ -224,17 +231,19 @@ def read_audio(path, tools, cancel):
     try:
         audio = readers[ext](path) if ext in readers else MutagenFile(path)
         if audio is None or not hasattr(audio, "info"):
-            raise ValueError("需要探测格式")
+            raise ValueError(tr('需要探测格式'))
         info = audio.info
         codec = {".flac": "flac", ".mp3": "mp3"}.get(ext, str(getattr(info, "codec", "")))
+        codec_profile=""
         if codec.startswith("mp4a"):
+            codec_profile="LC" if codec=="mp4a.40.2" else str(getattr(info,"codec_description",""))
             codec = "aac"
         if not codec or ext not in NATIVE:
             profile, probed = tools.probe(path, cancel)
         else:
             profile = Profile(codec, int(getattr(info, "sample_rate", 0)),
                               int(getattr(info, "channels", 0)), int(getattr(info, "bits_per_sample", 0)),
-                              float(info.length),bitrate=int(getattr(info,"bitrate",0) or 0))
+                              float(info.length),bitrate=int(getattr(info,"bitrate",0) or 0),codec_profile=codec_profile)
             probed = {}
         tags = probed | tag_view(audio, ext)
         has_cover = any(data and kind in (0, 3, 6) for kind, data in images(audio, ext))
@@ -248,10 +257,10 @@ def read_audio(path, tools, cancel):
 
 def make_cover(data, source):
     if len(data) > 25 * 1024**2:
-        raise ValueError("封面文件超过 25 MB")
+        raise ValueError(tr('封面文件超过 25 MB'))
     with Image.open(io.BytesIO(data)) as picture:
         if min(picture.size) < 48 or max(picture.size) > 20000:
-            raise ValueError("图片尺寸不适合作为封面")
+            raise ValueError(tr('图片尺寸不适合作为封面'))
         picture.load()
         transformed = ImageOps.exif_transpose(picture)
         if picture.format in ("JPEG", "PNG") and max(picture.size) <= 1600 and transformed.size == picture.size:
@@ -272,7 +281,7 @@ def embedded_cover(path):
             for kind, data in candidates:
                 if kind == desired:
                     try:
-                        return make_cover(data, "原文件内嵌图片")
+                        return make_cover(data, tr('原文件内嵌图片'))
                     except (ValueError, OSError):
                         continue
     except (ValueError, OSError):
@@ -356,9 +365,9 @@ def patch_tags(path, values, cover, id3_version="preserve"):
     roundtrip = tag_view(verified, ext)
     for key, value in values.items():
         if roundtrip.get(key) != value:
-            raise ValueError(f"标签写入校验失败 {key}")
+            raise ValueError(tr('标签写入校验失败 {0}').format(key))
     if cover and not any(data == cover.data and kind == 3 for kind, data in images(verified, ext)):
-        raise ValueError("封面写入校验失败")
+        raise ValueError(tr('封面写入校验失败'))
 
 
 def payload_hash(path, cancel):
@@ -372,7 +381,7 @@ def payload_hash(path, cancel):
                 cancel.check()
                 data = handle.read(min(size, 4 * 1024**2))
                 if not data:
-                    raise ValueError("音频数据提前结束")
+                    raise ValueError(tr('音频数据提前结束'))
                 digest.update(data)
                 size -= len(data)
 
@@ -390,16 +399,16 @@ def payload_hash(path, cancel):
             handle.seek(start)
             if ext == ".flac":
                 if handle.read(4) != b"fLaC":
-                    raise ValueError("无法定位 FLAC 音频块")
+                    raise ValueError(tr('无法定位 FLAC 音频块'))
                 while True:
                     tag = handle.read(4)
                     if len(tag) != 4:
-                        raise ValueError("FLAC 元数据不完整")
+                        raise ValueError(tr('FLAC 元数据不完整'))
                     handle.seek(int.from_bytes(tag[1:], "big"), 1)
                     if tag[0] & 128:
                         break
             if not 0 <= handle.tell() < length:
-                raise ValueError("音频块范围无效")
+                raise ValueError(tr('音频块范围无效'))
             block(length - handle.tell())
         elif ext == ".m4a":
             handle.seek(0)
@@ -408,7 +417,7 @@ def payload_hash(path, cancel):
                 pos = handle.tell()
                 header = handle.read(8)
                 if len(header) != 8:
-                    raise ValueError("MP4 数据块不完整")
+                    raise ValueError(tr('MP4 数据块不完整'))
                 size, atom = struct.unpack(">I4s", header)
                 if size == 1:
                     size = int.from_bytes(handle.read(8), "big")
@@ -416,15 +425,15 @@ def payload_hash(path, cancel):
                     size = length - pos
                 end = pos + size
                 if not handle.tell() <= end <= length:
-                    raise ValueError("MP4 数据块长度无效")
+                    raise ValueError(tr('MP4 数据块长度无效'))
                 if atom == b"mdat":
                     block(end - handle.tell())
                     media += 1
                 handle.seek(end)
             if not media:
-                raise ValueError("MP4 音频块缺失")
+                raise ValueError(tr('MP4 音频块缺失'))
         else:
-            raise ValueError(f"不支持直接校验的容器 {ext}")
+            raise ValueError(tr('不支持直接校验的容器 {0}').format(ext))
     return digest.hexdigest()
 
 
@@ -452,17 +461,21 @@ def render(track, dest, cover, tools, settings, cancel):
         tools.ff([*args, "-threads", "1", dest], cancel)
         after_profile, _, _ = read_audio(dest, tools, cancel)
         if after_profile.codec!=plan.codec or after_profile.rate!=plan.rate or after_profile.channels!=plan.channels or abs(after_profile.seconds-track.profile.seconds)>0.18 or plan.bits and after_profile.bits!=plan.bits:
-            raise ValueError("转换后的声道数或时长未通过校验")
+            raise ValueError(tr('转换后的声道数或时长未通过校验'))
         if plan.mode=="remux" and tools.encoded_hash(track.path, cancel) != tools.encoded_hash(dest, cancel):
-            raise ValueError("AAC 封装前后的编码音频不一致")
-        if settings.verify_pcm and track.profile.lossless and plan.codec=="flac" and plan.pcm_unchanged:
+            raise ValueError(tr('AAC 封装前后的编码音频不一致'))
+        if settings.verify_pcm and track.profile.lossless and plan.codec in ("flac","alac") and plan.pcm_unchanged:
             if tools.decoded_hash(track.path, cancel) != tools.decoded_hash(dest, cancel):
-                raise ValueError("无损转换前后的 PCM 校验不一致")
+                raise ValueError(tr('无损转换前后的 PCM 校验不一致'))
         elif settings.verify_pcm:
             tools.decoded_hash(dest,cancel)
         before = payload_hash(dest, cancel)
-    patch_tags(dest, track.tags, cover,settings.id3_version)
+    from apple import device_settings,compatibility_issue
+    patch_tags(dest, track.tags, cover,device_settings(settings).id3_version)
     if payload_hash(dest, cancel) != before:
-        raise ValueError("写入标签后音频数据发生变化")
+        raise ValueError(tr('写入标签后音频数据发生变化'))
+    if settings.output_profile!="library":
+        profile,_,_=read_audio(dest,tools,cancel)
+        if issue:=compatibility_issue(profile,settings,dest.suffix):raise ValueError(issue)
     track.source.check()
     return before

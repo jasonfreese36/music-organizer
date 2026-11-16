@@ -1,10 +1,11 @@
 """Container identification only. Importable without audio or GUI dependencies."""
+from i18n import tr
 import re
 from pathlib import Path
 
 KGM_MAGIC=bytes.fromhex("7cd532eb86027f4ba8afa68e0fff9914")
 VPR_MAGIC=bytes.fromhex("0528bc96e9e45a4391aabdd07af53631")
-PLATFORMS={"netease":"网易云音乐","qq":"QQ 音乐","kugou":"酷狗音乐","kuwo":"酷我音乐","migu":"咪咕音乐"}
+PLATFORMS={"netease":tr('网易云音乐'),"qq":tr('QQ 音乐'),"kugou":tr('酷狗音乐'),"kuwo":tr('酷我音乐'),"migu":tr('咪咕音乐')}
 ARCHIVE_NAMES={"netease":"NetEase Music","qq":"QQ Music","kugou":"Kugou Music","kuwo":"Kuwo Music","migu":"Migu Music"}
 FAMILY_PLATFORM={"ncm":"netease","netease_uc":"netease","qq":"qq","qq_tm":"qq","kugou":"kugou","kuwo":"kuwo","migu":"migu","migu_mgm":"migu"}
 _TOKEN=r"(?:ncm|uc|qmc(?:[0-9]|flac|ogg|ra)?|mflac[0-9ahlm]*|mgg[0-9ahlm]*|mmp4|tkm|bkc(?:mp3|m4a|flac|wav|ape|ogg|wma)|tm[0236]|kgm|kgma|vpr|kgg|kwm|kwma|mg3d|mgm|666c6163|6d7033|6f6767|6d3461|776176)"

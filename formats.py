@@ -1,3 +1,4 @@
+from i18n import tr
 import re
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
@@ -23,7 +24,7 @@ def cue_text(path):
             return raw.decode(enc)
         except UnicodeError:
             pass
-    raise ValueError("CUE 文本编码无法识别")
+    raise ValueError(tr('CUE 文本编码无法识别'))
 
 
 def parse_cue(path):
@@ -38,7 +39,7 @@ def parse_cue(path):
         track = re.match(r"TRACK\s+(\d+)\s+(\S+)", line, re.I)
         if track:
             if track[2].upper() != "AUDIO" or not filename:
-                raise ValueError("CUE 含数据轨或缺少 FILE，保留原盘待核对")
+                raise ValueError(tr('CUE 含数据轨或缺少 FILE，保留原盘待核对'))
             part = CuePart(int(track[1]), filename)
             parts.append(part)
             continue
@@ -46,7 +47,7 @@ def parse_cue(path):
         if index and part:
             m, s, f = map(int, index.groups())
             if s >= 60 or f >= 75:
-                raise ValueError("CUE 索引时间无效")
+                raise ValueError(tr('CUE 索引时间无效'))
             part.frame = (m * 60 + s) * 75 + f
             continue
         match = re.match(r'(TITLE|PERFORMER|SONGWRITER|ISRC|CATALOG|REM\s+(?:DATE|GENRE|DISCID))\s+(.+)', line, re.I)
@@ -60,14 +61,14 @@ def parse_cue(path):
             if mapped:
                 (part.tags if part else common)[mapped] = value
     if not parts or any(p.frame is None for p in parts):
-        raise ValueError("CUE 缺少有效音轨或 INDEX 01")
+        raise ValueError(tr('CUE 缺少有效音轨或 INDEX 01'))
     return common, parts
 
 
 def resolve_cue_file(cue, name, source_root):
     relative = Path(name.replace("\\", "/"))
     if relative.is_absolute() or ".." in relative.parts or relative.drive:
-        raise ValueError("CUE 引用目录外的文件")
+        raise ValueError(tr('CUE 引用目录外的文件'))
     exact = cue.parent / relative
     if exact.is_file() and exact.resolve().is_relative_to(source_root) and not reparse(exact):
         return exact
@@ -77,7 +78,7 @@ def resolve_cue_file(cue, name, source_root):
               and p.suffix.casefold() in {".wav", ".wave", ".flac", ".ape", ".wv", ".tta", ".aif", ".aiff"}]
     if len(nearby) == 1:
         return nearby[0]
-    raise ValueError(f"CUE 引用的音频不存在或不唯一：{name}")
+    raise ValueError(tr('CUE 引用的音频不存在或不唯一：{0}').format(name))
 
 
 def split_cue(item, source_root, scratch, item_by_path, tools, cancel, emit):
@@ -92,9 +93,9 @@ def split_cue(item, source_root, scratch, item_by_path, tools, cancel, emit):
         cancel.check()
         source = item_by_path.get(path)
         if not source or not source.profile or source.error:
-            raise ValueError("CUE 对应音频未通过扫描")
+            raise ValueError(tr('CUE 对应音频未通过扫描'))
         if not source.profile.lossless or source.profile.codec.startswith("dsd"):
-            raise ValueError("CUE 分轨需要可解码的 PCM 无损原轨，已保留整轨")
+            raise ValueError(tr('CUE 分轨需要可解码的 PCM 无损原轨，已保留整轨'))
         source.check()
         profile = source.profile
         # Decode the image once. Subsequent track encodes seek in the raw PCM file.
@@ -104,7 +105,7 @@ def split_cue(item, source_root, scratch, item_by_path, tools, cancel, emit):
         samples = raw.stat().st_size // stride
         indexes = [(p.frame * profile.rate) // 75 for p in members]
         if any(b <= a for a, b in zip(indexes, indexes[1:])) or indexes[-1] >= samples:
-            raise ValueError("CUE 索引超出整轨或次序异常")
+            raise ValueError(tr('CUE 索引超出整轨或次序异常'))
         # Preserve leading audio/pregap in the first track; the whole image remains archived too.
         indexes[0] = 0
         for j, part in enumerate(members):
@@ -121,15 +122,15 @@ def split_cue(item, source_root, scratch, item_by_path, tools, cancel, emit):
             tools.ff([*args, out], cancel)
             result_profile, _, _ = read_audio(out, tools, cancel)
             if round(result_profile.seconds * profile.rate) != end - start:
-                raise ValueError("CUE 分轨采样数校验失败")
+                raise ValueError(tr('CUE 分轨采样数校验失败'))
             tags = source.tags | common | part.tags
             tags["tracknumber"] = count_tag(part.index, len(parts))
             tags.setdefault("artist", tags.get("albumartist", ""))
             track = infer_track(source, out, result_profile, tags, False)
             track.origin_id += f"#CUE:{part.index}"
-            track.metadata_source = "CUE 与原轨标签"
+            track.metadata_source = tr('CUE 与原轨标签')
             tracks.append(track)
-            emit("log", f"CUE 分轨 {part.index:02} · {tags.get('title', out.name)}")
+            emit("log", tr('CUE 分轨 {0:02} · {1}').format(part.index, tags.get('title', out.name)))
         source.check()
         references.append(source)
         raw.unlink()
@@ -142,13 +143,13 @@ def decrypt_ncm(item, scratch, tools, cancel):
     tools.run([tools.ncmdump, "-o", scratch, item.path], cancel, cwd=scratch)
     paths = [p for p in scratch.rglob("*") if p.is_file() and p.suffix.casefold() in {".flac", ".mp3", ".m4a", ".aac"}]
     if len(paths) != 1:
-        raise ValueError("ncmdump 未产生唯一的有效音频")
+        raise ValueError(tr('ncmdump 未产生唯一的有效音频'))
     profile, tags, cover = read_audio(paths[0], tools, cancel)
     if profile.seconds <= 0:
-        raise ValueError("NCM 解密结果没有有效时长")
+        raise ValueError(tr('NCM 解密结果没有有效时长'))
     item.check()
     track = infer_track(item, paths[0], profile, tags, cover)
-    track.metadata_source = "NCM 原始元数据"
+    track.metadata_source = tr('NCM 原始元数据')
     return [track]
 
 
@@ -162,13 +163,13 @@ def extract_sacd(item, scratch, tools, settings, cancel, emit):
         folder = scratch / area
         folder.mkdir()
         try:
-            emit("log", f"读取 SACD {area} · {item.rel.name}")
+            emit("log", tr('读取 SACD {0} · {1}').format(area, item.rel.name))
             tools.run([tools.sacd, "-i", item.path, "-2" if area == "stereo" else "-m",
                        "-f", "-C", "-b", "--flac-rate", str(settings.sacd_rate),
                        "--max-read-errors", "0", "-y", folder], cancel, cwd=folder)
             files = sorted(folder.rglob("*.flac"))
             if not files:
-                raise ValueError("此 SACD 区域没有可提取音轨")
+                raise ValueError(tr('此 SACD 区域没有可提取音轨'))
             common, parts = {}, []
             cues = list(folder.rglob("*.cue"))
             if cues:
@@ -177,7 +178,7 @@ def extract_sacd(item, scratch, tools, settings, cancel, emit):
                 except ValueError:
                     pass
             if parts and len(parts) != len(files):
-                raise ValueError("SACD 元数据与提取音轨数量不一致")
+                raise ValueError(tr('SACD 元数据与提取音轨数量不一致'))
             xml_tags = {}
             xmls = list(folder.rglob("*.xml"))
             if xmls:
@@ -190,7 +191,7 @@ def extract_sacd(item, scratch, tools, settings, cancel, emit):
                         continue
                     expected = int(node.get("totaltracks", "0"))
                     if expected and expected != len(files):
-                        raise ValueError("SACD TOC 音轨数与输出数量不同，未导入不完整专辑")
+                        raise ValueError(tr('SACD TOC 音轨数与输出数量不同，未导入不完整专辑'))
                     for member in node.findall("track"):
                         raw_tags = {m.get("name"): m.get("value", "") for m in member.findall("meta")}
                         aliases = {"TITLE": "title", "PERFORMER": "artist", "ALBUM": "album",
@@ -208,7 +209,7 @@ def extract_sacd(item, scratch, tools, settings, cancel, emit):
             for index, path in enumerate(files, 1):
                 profile, tags, cover = read_audio(path, tools, cancel)
                 if profile.seconds <= 0 or profile.codec != "flac":
-                    raise ValueError("SACD 提取产生无效音轨")
+                    raise ValueError(tr('SACD 提取产生无效音轨'))
                 cue_part = next((p for p in parts if Path(p.file).name.casefold() == path.name.casefold()), None)
                 if cue_part:
                     tags = common | cue_part.tags | tags

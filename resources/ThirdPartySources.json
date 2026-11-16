@@ -1,0 +1,365 @@
+{
+  "schema": 1,
+  "sources": [
+    {
+      "name": "FFmpeg",
+      "url": "https://codeload.github.com/FFmpeg/FFmpeg/zip/a35157abb9",
+      "upstream": "https://github.com/FFmpeg/FFmpeg",
+      "revision": "a35157abb9",
+      "file": "FFmpeg.zip",
+      "sha256": "44ee0cd3c249f8105c68e6c905ca884e2c51fbd98903dc8ea573d1a952f0d852",
+      "size": 22519726
+    },
+    {
+      "name": "FFmpeg-Build-Recipes",
+      "url": "https://codeload.github.com/FFmpeg-Builds/FFmpeg-Builds/zip/c9fe5114060e507409f7ee07edfd82efaf25d767",
+      "upstream": "https://github.com/FFmpeg-Builds/FFmpeg-Builds",
+      "revision": "c9fe5114060e507409f7ee07edfd82efaf25d767",
+      "file": "FFmpeg-Build-Recipes.zip",
+      "sha256": "b38d523f629200404ce597b921e023567dea4ab8d4af5e8b933d96e76642472a",
+      "size": 263484
+    },
+    {
+      "name": "Nuitka",
+      "url": "https://codeload.github.com/Nuitka/Nuitka/zip/4.3.5",
+      "upstream": "https://github.com/Nuitka/Nuitka",
+      "revision": "4.3.5",
+      "file": "Nuitka.zip",
+      "sha256": "3d5572df29b94c03cc3af0a4035d870c13cc19153c4a0a245574a8a6fe1eb65f",
+      "size": 7192441
+    },
+    {
+      "name": "Pillow",
+      "url": "https://files.pythonhosted.org/packages/ce/a4/9cc30690a394a8305e8be4c9036aa16d0dfddadd09079860b582f562496d/pillow-13.0.0.tar.gz",
+      "upstream": "https://pypi.org/project/Pillow",
+      "revision": "13.0.0",
+      "file": "Pillow.tar.gz",
+      "sha256": "cdcd1ba258178f7356d74170c9a81ba4eab6a5d55748bc402a5a2a6fe6be3510",
+      "size": 47058631
+    },
+    {
+      "name": "SACDExtract2",
+      "url": "https://codeload.github.com/dev-zetta/sacd_extract2/zip/v0.9.0",
+      "upstream": "https://github.com/dev-zetta/sacd_extract2",
+      "revision": "v0.9.0",
+      "file": "SACDExtract2.zip",
+      "sha256": "7cf92fa392aaaed4b7dc4f8788b784b7255193bceb84e0f14c7c2cf3da4ee17c",
+      "size": 5276908
+    },
+    {
+      "name": "TagLib",
+      "url": "https://codeload.github.com/taglib/taglib/zip/v2.0.2",
+      "upstream": "https://github.com/taglib/taglib",
+      "revision": "v2.0.2",
+      "file": "TagLib.zip",
+      "sha256": "8f15573ee091666df2edb445f70f805b3f8b8fa940ade916b5c66f6e35a2c067",
+      "size": 1771752
+    },
+    {
+      "name": "cairo",
+      "url": "https://gitlab.freedesktop.org/cairo/cairo/-/archive/74755964edef651691d5cd36ff140108298e4e6e/cairo-74755964edef651691d5cd36ff140108298e4e6e.zip",
+      "upstream": "https://gitlab.freedesktop.org/cairo/cairo.git",
+      "revision": "74755964edef651691d5cd36ff140108298e4e6e",
+      "file": "cairo.zip",
+      "sha256": "29f6318828a68fec6d9f035fed7c51e260b782ab06afdfa6689920b5125f1f12",
+      "size": 52153370
+    },
+    {
+      "name": "certifi",
+      "url": "https://files.pythonhosted.org/packages/fd/11/b524cbd9bbdaca58608e4cf4053fd463417549e1959fa8d3aa18319f9555/certifi-2026.10.23.tar.gz",
+      "upstream": "https://pypi.org/project/certifi",
+      "revision": "2026.10.23",
+      "file": "certifi.tar.gz",
+      "sha256": "a9895e6e2758b371e0545e321a3a8fd1fcfd9829ada8824a936dfb16aaaf36cd",
+      "size": 136225
+    },
+    {
+      "name": "chromaprint",
+      "url": "https://codeload.github.com/acoustid/chromaprint/zip/3b38c100022bdfb49be7797c4828a476f1621d55",
+      "upstream": "https://github.com/acoustid/chromaprint.git",
+      "revision": "3b38c100022bdfb49be7797c4828a476f1621d55",
+      "file": "chromaprint.zip",
+      "sha256": "cb0bac5fb43a79af3e59dfac97d50da0b99b1d37e7cd91fd324067868159b855",
+      "size": 1928075
+    },
+    {
+      "name": "customtkinter",
+      "url": "https://files.pythonhosted.org/packages/c4/36/aee6ed9171a5a232da66a8b257752bd03d25b487c9d67ba367ad159bd976/customtkinter-6.0.0.tar.gz",
+      "upstream": "https://pypi.org/project/customtkinter",
+      "revision": "6.0.0",
+      "file": "customtkinter.tar.gz",
+      "sha256": "c782df167bc64ab3fc3140286df06967ac2de4dcc97dd5958426fe9c1a98057b",
+      "size": 267195
+    },
+    {
+      "name": "darkdetect",
+      "url": "https://files.pythonhosted.org/packages/45/77/7575be73bf12dee231d0c6e60ce7fb7a7be4fcd58823374fc59a6e48262e/darkdetect-0.8.0.tar.gz",
+      "upstream": "https://pypi.org/project/darkdetect",
+      "revision": "0.8.0",
+      "file": "darkdetect.tar.gz",
+      "sha256": "b5428e1170263eb5dea44c25dc3895edd75e6f52300986353cd63533fe7df8b1",
+      "size": 7681
+    },
+    {
+      "name": "fribidi",
+      "url": "https://codeload.github.com/fribidi/fribidi/zip/d2f3e1f4946e7cef9789e1c3ebdb4a60d4314c7f",
+      "upstream": "https://github.com/fribidi/fribidi.git",
+      "revision": "d2f3e1f4946e7cef9789e1c3ebdb4a60d4314c7f",
+      "file": "fribidi.zip",
+      "sha256": "e580b248cf0967e848d5cee0ca8fa0d06326fec1055ff433bfa8e24e14e23897",
+      "size": 2240677
+    },
+    {
+      "name": "glib",
+      "url": "https://codeload.github.com/GNOME/glib/zip/50b938a3e8f5154a25b5af3dd8b9dd8b2ccba7c3",
+      "upstream": "https://github.com/GNOME/glib.git",
+      "revision": "50b938a3e8f5154a25b5af3dd8b9dd8b2ccba7c3",
+      "file": "glib.zip",
+      "sha256": "2a41d32eadbb3076457abac061dd3917fe8326f5e42dc947f02f1e9490c6e903",
+      "size": 11889405
+    },
+    {
+      "name": "glib-gvdb",
+      "url": "https://codeload.github.com/GNOME/gvdb/zip/2b42fc75f09dbe1cd1057580b5782b08f2dcb400",
+      "upstream": "https://codeload.github.com/GNOME/gvdb/zip/2b42fc75f09dbe1cd1057580b5782b08f2dcb400",
+      "revision": "2b42fc75f09dbe1cd1057580b5782b08f2dcb400",
+      "file": "glib-gvdb.zip",
+      "sha256": "5a852897f091f09863d45a47a55eef77ff7caa79aaead613878a3b394f0680b3",
+      "size": 38411
+    },
+    {
+      "name": "gme",
+      "url": "https://codeload.github.com/libgme/game-music-emu/zip/f68963b1de0633149b05732113d3c3113c6f63a1",
+      "upstream": "https://github.com/libgme/game-music-emu.git",
+      "revision": "f68963b1de0633149b05732113d3c3113c6f63a1",
+      "file": "gme.zip",
+      "sha256": "0954124b1935210f74e0632f64899bccc6db9c471cdce07438a8092035e49f90",
+      "size": 453462
+    },
+    {
+      "name": "gmp",
+      "url": "https://codeload.github.com/BtbN/gmplib/zip/5c3e9a9d52b697cab7b7d26a53972a3bf922d59a",
+      "upstream": "https://github.com/BtbN/gmplib.git",
+      "revision": "5c3e9a9d52b697cab7b7d26a53972a3bf922d59a",
+      "file": "gmp.zip",
+      "sha256": "29a0833a47c9276092f6581fa7c17de505907bc187285c9111a32f5ac2901d5c",
+      "size": 4580724
+    },
+    {
+      "name": "lame-r7113",
+      "url": "https://sourceforge.net/code-snapshots/svn/l/la/lame/svn/lame-svn-r7113-trunk-lame.zip",
+      "upstream": "https://svn.code.sf.net/p/lame/svn/trunk/lame",
+      "revision": "7113",
+      "file": "lame-r7113.zip",
+      "sha256": "7451775a1f72b6138cfb77cc560b3782cb0af292d95550763cad3fa24d963aba",
+      "size": 2468464
+    },
+    {
+      "name": "lcevcdec",
+      "url": "https://codeload.github.com/v-novaltd/LCEVCdec/zip/741fb7c869cf61012f7dcebfcd9e56981198c78b",
+      "upstream": "https://github.com/v-novaltd/LCEVCdec.git",
+      "revision": "741fb7c869cf61012f7dcebfcd9e56981198c78b",
+      "file": "lcevcdec.zip",
+      "sha256": "de378b367b91abacb069ea504e8cdfd124646560acfefc16aca88f1109741c7d",
+      "size": 3227494
+    },
+    {
+      "name": "libFLAC",
+      "url": "https://downloads.xiph.org/releases/flac/flac-1.5.0.tar.xz",
+      "upstream": "https://downloads.xiph.org/releases/flac/flac-1.5.0.tar.xz",
+      "revision": "1.5.0",
+      "file": "libFLAC.tar.xz",
+      "sha256": "f2c1c76592a82ffff8413ba3c4a1299b6c7ab06c734dee03fd88630485c2b920",
+      "size": 1078872
+    },
+    {
+      "name": "libaribb24",
+      "url": "https://codeload.github.com/nkoriyama/aribb24/zip/5e9be272f96e00f15a2f3c5f8ba7e124862aec38",
+      "upstream": "https://github.com/nkoriyama/aribb24.git",
+      "revision": "5e9be272f96e00f15a2f3c5f8ba7e124862aec38",
+      "file": "libaribb24.zip",
+      "sha256": "4c78db4044d9dc6344846c22d2aa70849ebfa46966906ecf9f43bffc6abc15e0",
+      "size": 59102
+    },
+    {
+      "name": "libbluray",
+      "url": "https://code.videolan.org/videolan/libbluray/-/archive/f33a738fd7bb8b5e1148b0a5424778db7342450b/libbluray-f33a738fd7bb8b5e1148b0a5424778db7342450b.zip",
+      "upstream": "https://code.videolan.org/videolan/libbluray.git",
+      "revision": "f33a738fd7bb8b5e1148b0a5424778db7342450b",
+      "file": "libbluray.zip",
+      "sha256": "ad5af7a8cae27736fd73abc5ddb44f658863cb7e80afc2b8681d30099e444c2d",
+      "size": 1440092
+    },
+    {
+      "name": "libiconv",
+      "url": "https://codeload.github.com/arthenica/libiconv/zip/b5a1735e02bf43ee6e490fcf9395e8abc8d32432",
+      "upstream": "https://git.savannah.gnu.org/git/libiconv.git",
+      "revision": "b5a1735e02bf43ee6e490fcf9395e8abc8d32432",
+      "file": "libiconv.zip",
+      "sha256": "9431577d9252e53dae96cb51abf16d1be2ee0ee09a22b871f9123510c3b862c6",
+      "size": 5254508
+    },
+    {
+      "name": "libiconv2",
+      "url": "https://codeload.github.com/coreutils/gnulib/zip/5df606bbd0ef54a8f150c3303c870b9381a661f0",
+      "upstream": "https://git.savannah.gnu.org/git/gnulib.git",
+      "revision": "5df606bbd0ef54a8f150c3303c870b9381a661f0",
+      "file": "libiconv2.zip",
+      "sha256": "bd110f2fd07b3a202a7d24f580d5f9c634b87ea4b1c16c5a74f37e3f4a8ef415",
+      "size": 17442369
+    },
+    {
+      "name": "libplacebo",
+      "url": "https://code.videolan.org/videolan/libplacebo/-/archive/275f7dea27924cdd34ab2e6c20e448b6bc4fab65/libplacebo-275f7dea27924cdd34ab2e6c20e448b6bc4fab65.zip",
+      "upstream": "https://code.videolan.org/videolan/libplacebo.git",
+      "revision": "275f7dea27924cdd34ab2e6c20e448b6bc4fab65",
+      "file": "libplacebo.zip",
+      "sha256": "fda93e6700603b61166b6e57d08372f864a91e1f0cd7b2bdba839bfb6dd7577b",
+      "size": 1149979
+    },
+    {
+      "name": "librsvg",
+      "url": "https://codeload.github.com/GNOME/librsvg/zip/0c074d0a25adefd65843067306f9bc1fb609f68f",
+      "upstream": "https://github.com/GNOME/librsvg.git",
+      "revision": "0c074d0a25adefd65843067306f9bc1fb609f68f",
+      "file": "librsvg.zip",
+      "sha256": "2d1d9811b6308a8ca0aebf3464ab3ad72c43a7ea7626f9f2c1362bfc48bd3aaf",
+      "size": 9395210
+    },
+    {
+      "name": "libssh",
+      "url": "https://gitlab.com/libssh/libssh-mirror/-/archive/9de02f3d01ba16d06f46c0c4d27aa08d8deeecee/libssh-mirror-9de02f3d01ba16d06f46c0c4d27aa08d8deeecee.zip",
+      "upstream": "https://gitlab.com/libssh/libssh-mirror.git",
+      "revision": "9de02f3d01ba16d06f46c0c4d27aa08d8deeecee",
+      "file": "libssh.zip",
+      "sha256": "b464467de1b3f325a8b6bb1d2e5eadd371489ffebc229c170b43f575dc55b0d4",
+      "size": 1663821
+    },
+    {
+      "name": "libudfread",
+      "url": "https://code.videolan.org/videolan/libudfread/-/archive/b0bc6957e7e07d5f35391f210596d9eb71cffdd9/libudfread-b0bc6957e7e07d5f35391f210596d9eb71cffdd9.zip",
+      "upstream": "https://code.videolan.org/videolan/libudfread.git",
+      "revision": "b0bc6957e7e07d5f35391f210596d9eb71cffdd9",
+      "file": "libudfread.zip",
+      "sha256": "1ec48aaeaf211f52f4c013022ff5f16f96a399e7ffda4332af81f81b7d2fdae3",
+      "size": 145962
+    },
+    {
+      "name": "libzmq",
+      "url": "https://codeload.github.com/zeromq/libzmq/zip/46493370217ac135246617fa2f6ac819d8b61bfc",
+      "upstream": "https://github.com/zeromq/libzmq.git",
+      "revision": "46493370217ac135246617fa2f6ac819d8b61bfc",
+      "file": "libzmq.zip",
+      "sha256": "6028371f1c3033dcb5d46f8b06915cb3e05b1196e90cadccc45d5eb5055242c6",
+      "size": 1379807
+    },
+    {
+      "name": "mutagen",
+      "url": "https://files.pythonhosted.org/packages/df/70/1675da133ea92227da41bf5b24e1c66be597ff736a1533ade41da986852f/mutagen-1.48.1.tar.gz",
+      "upstream": "https://pypi.org/project/mutagen",
+      "revision": "1.48.1",
+      "file": "mutagen.tar.gz",
+      "sha256": "8f95637ab9f6f305cec6bd1294e197debe207998e3e068596563c74f86b0a173",
+      "size": 1276978
+    },
+    {
+      "name": "ncmdump",
+      "url": "https://codeload.github.com/taurusxin/ncmdump/zip/1.5.1",
+      "upstream": "https://github.com/taurusxin/ncmdump",
+      "revision": "1.5.1",
+      "file": "ncmdump.zip",
+      "sha256": "209bce589398a094c2dc3e53c260de48e4d7251ad2d03075198bd94a0bbe8121",
+      "size": 532512
+    },
+    {
+      "name": "openal",
+      "url": "https://codeload.github.com/kcat/openal-soft/zip/4a52288b772d1722713675f71bb30f321e78fd80",
+      "upstream": "https://github.com/kcat/openal-soft.git",
+      "revision": "4a52288b772d1722713675f71bb30f321e78fd80",
+      "file": "openal.zip",
+      "sha256": "83ce6cac45f868abab5689666386738d97c336a01aaa20e390f699947d915336",
+      "size": 1915974
+    },
+    {
+      "name": "opencc-python-reimplemented",
+      "url": "https://files.pythonhosted.org/packages/8d/6d/c6f37eed651dd6b752e50f80a93396cdaa42a6acc6ce05ad7452303ea511/opencc-python-reimplemented-0.1.7.tar.gz",
+      "upstream": "https://pypi.org/project/opencc-python-reimplemented",
+      "revision": "0.1.7",
+      "file": "opencc-python-reimplemented.tar.gz",
+      "sha256": "4f777ea3461a25257a7b876112cfa90bb6acabc6dfb843bf4d11266e43579dee",
+      "size": 482566
+    },
+    {
+      "name": "packaging",
+      "url": "https://files.pythonhosted.org/packages/7d/fa/3944b40b07da9ce895c0e6303a5ab7d53da063554f534556b134a54d6093/packaging-26.3.tar.gz",
+      "upstream": "https://pypi.org/project/packaging",
+      "revision": "26.3",
+      "file": "packaging.tar.gz",
+      "sha256": "94edc256424af38762eb31306eed28beb9f0efc50a8837492c9d6fd6004aed79",
+      "size": 313412
+    },
+    {
+      "name": "pango",
+      "url": "https://codeload.github.com/GNOME/pango/zip/68e981d243d50e03f3df12fb400f31647ef570d2",
+      "upstream": "https://github.com/GNOME/pango.git",
+      "revision": "68e981d243d50e03f3df12fb400f31647ef570d2",
+      "file": "pango.zip",
+      "sha256": "a54bdae5434239733344921e86fae9ba94beb916da5634eb24d903fff494c670",
+      "size": 2878468
+    },
+    {
+      "name": "proxy-libintl",
+      "url": "https://github.com/frida/proxy-libintl/archive/refs/tags/0.5.tar.gz",
+      "upstream": "https://github.com/frida/proxy-libintl/archive/refs/tags/0.5.tar.gz",
+      "revision": "0.5",
+      "file": "proxy-libintl.tar.gz",
+      "sha256": "f7a1cbd7579baaf575c66f9d99fb6295e9b0684a28b095967cfda17857595303",
+      "size": 13056
+    },
+    {
+      "name": "soxr",
+      "url": "https://codeload.github.com/chirlu/soxr/zip/945b592b70470e29f917f4de89b4281fbbd540c0",
+      "upstream": "https://git.code.sf.net/p/soxr/code",
+      "revision": "945b592b70470e29f917f4de89b4281fbbd540c0",
+      "file": "soxr.zip",
+      "sha256": "c3a73976077cdb7cd87325b449bb31296b377358ef00b41b91cc3623374356e2",
+      "size": 215329
+    },
+    {
+      "name": "srt",
+      "url": "https://codeload.github.com/Haivision/srt/zip/9f2390232a8256ed4c72a5418c2b2777c49ad737",
+      "upstream": "https://github.com/Haivision/srt.git",
+      "revision": "9f2390232a8256ed4c72a5418c2b2777c49ad737",
+      "file": "srt.zip",
+      "sha256": "d98c382821c3357afffe66ab5e4ae7080983ba9542e4df1feb0657fadd791498",
+      "size": 2034499
+    },
+    {
+      "name": "twolame",
+      "url": "https://codeload.github.com/njh/twolame/zip/6fced852d4d5cfad58cf9dbe3ea619b08e87d398",
+      "upstream": "https://github.com/njh/twolame.git",
+      "revision": "6fced852d4d5cfad58cf9dbe3ea619b08e87d398",
+      "file": "twolame.zip",
+      "sha256": "d8a8e1576711e79f2527230b81844c4b9cc990d4b4b788c6dbfca2c4f557d0ac",
+      "size": 485924
+    },
+    {
+      "name": "vapoursynth",
+      "url": "https://codeload.github.com/vapoursynth/vapoursynth/zip/R81",
+      "upstream": "https://github.com/vapoursynth/vapoursynth.git",
+      "revision": "R81",
+      "file": "vapoursynth.zip",
+      "sha256": "671adf36f950e3707d18436a0868ad119df0c5ecaa4b0edec4a0b31645b0e2be",
+      "size": 1340029
+    },
+    {
+      "name": "xz",
+      "url": "https://codeload.github.com/tukaani-project/xz/zip/299eb5c3f597f107fd6019bf156885ac8bfaa5ea",
+      "upstream": "https://github.com/tukaani-project/xz.git",
+      "revision": "299eb5c3f597f107fd6019bf156885ac8bfaa5ea",
+      "file": "xz.zip",
+      "sha256": "adb77889ed1e34569930ad86c0d23d98f3df6e9620beea31444de7b64e45d6e7",
+      "size": 2010954
+    }
+  ]
+}

@@ -1,12 +1,12 @@
 VSVersionInfo(
-  ffi=FixedFileInfo(filevers=(1,3,0,0), prodvers=(1,3,0,0), mask=0x3f, flags=0x0,
+  ffi=FixedFileInfo(filevers=(1,4,0,0), prodvers=(1,4,0,0), mask=0x3f, flags=0x0,
                    OS=0x40004, fileType=0x1, subtype=0x0, date=(0,0)),
   kids=[StringFileInfo([StringTable('040904B0', [
     StringStruct('CompanyName', 'Music Organizer Contributors'),
     StringStruct('FileDescription', 'Music Organizer - Audio Library Tool'),
-    StringStruct('FileVersion', '1.3.0'),
+    StringStruct('FileVersion', '1.4.0'),
     StringStruct('InternalName', 'MusicOrganizer'),
     StringStruct('LegalCopyright', 'Copyright (C) 2026 Music Organizer Contributors. MIT; third-party licenses apply.'),
     StringStruct('OriginalFilename', 'MusicOrganizer.exe'),
     StringStruct('ProductName', 'Music Organizer'),
-    StringStruct('ProductVersion', '1.3.0')])]), VarFileInfo([VarStruct('Translation',[1033,1200])])])
+    StringStruct('ProductVersion', '1.4.0')])]), VarFileInfo([VarStruct('Translation',[1033,1200])])])

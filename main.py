@@ -1,3 +1,4 @@
+from i18n import tr
 import argparse
 import json
 import sys
@@ -8,6 +9,8 @@ from pathlib import Path
 def main():
     parser = argparse.ArgumentParser(description="Music Organizer: portable GUI and diagnostic CLI")
     parser.add_argument("--check-tools", action="store_true")
+    parser.add_argument("--check-gui",action="store_true",help="Check GUI controls in temporary preferences and exit")
+    parser.add_argument("--language",choices=("zh_CN","en"))
     parser.add_argument("--organize", action="store_true")
     parser.add_argument("--scan", action="store_true")
     parser.add_argument("--source", type=Path)
@@ -25,18 +28,33 @@ def main():
     parser.add_argument("--tag-sources")
     parser.add_argument("--cover-sources")
     args = parser.parse_args()
+    if args.language:
+        from i18n import select_language
+        select_language(args.language)
+    if args.check_gui:
+        try:
+            from gui_check import check_gui
+            result={"gui":check_gui()}
+        except Exception as exc:result=dict(error=str(exc),traceback=traceback.format_exc())
+        raw=json.dumps(result,ensure_ascii=False,indent=2)
+        if args.report:
+            from model import write_atomic
+            write_atomic(args.report.resolve(),raw.encode("utf-8"))
+        elif sys.stdout:print(raw)
+        return 1 if "error" in result else 0
     if args.check_tools or args.scan or args.organize or args.test_sources or args.search_releases or args.preview:
         from media import Tools
         from model import Cancel, Settings, validated_roots, write_atomic
         tools, cancel = Tools(), Cancel()
         result = {}
+        report_allowed=True
         try:
             values={}
             if args.settings:
-                if args.settings.stat().st_size>2*1024**2:raise ValueError("配置超过 2 MB")
+                if args.settings.stat().st_size>2*1024**2:raise ValueError(tr('配置超过 2 MB'))
                 document=json.loads(args.settings.read_text(encoding="utf-8-sig"))
                 values=document.get("settings",document)
-                if not isinstance(values,dict):raise ValueError("配置格式无效")
+                if not isinstance(values,dict):raise ValueError(tr('配置格式无效'))
                 values=dict(values)
             if args.offline:values["online"]=False
             if args.workers is not None:values["workers"]=args.workers
@@ -45,6 +63,9 @@ def main():
                 raw=getattr(args,key)
                 if raw is not None:values[key]=tuple(s.strip() for s in raw.split(",") if s.strip())
             settings=Settings(**values)
+            if settings.output_profile!="library" and args.report and args.dest and args.report.resolve().is_relative_to(args.dest.resolve()):
+                report_allowed=False
+                raise ValueError(tr('设备预设的诊断报告必须保存在设备导入目录之外'))
             if args.check_tools or args.scan or args.organize or args.preview:
                 result["tools"] = tools.verify(cancel)
             if args.test_sources or args.search_releases:
@@ -76,7 +97,7 @@ def main():
             result["error"] = str(exc)
             result["traceback"] = traceback.format_exc()
         raw = json.dumps(result, ensure_ascii=False, indent=2).encode("utf-8")
-        if args.report:
+        if args.report and report_allowed:
             write_atomic(args.report.resolve(), raw)
         elif sys.stdout:
             print(raw.decode("utf-8"))
@@ -91,5 +112,5 @@ if __name__ == "__main__":
         sys.exit(main())
     except Exception:
         from tkinter import messagebox
-        messagebox.showerror("Music Organizer 启动失败", traceback.format_exc()[-3000:])
+        messagebox.showerror(tr('Music Organizer 启动失败'), traceback.format_exc()[-3000:])
         raise

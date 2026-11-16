@@ -10,7 +10,7 @@ The current Python application imports Mutagen, which is GPL-2.0-or-later. Distr
 
 当前完整版使用 Mutagen（GPL-2.0-or-later）；完整组合程序的再分发须遵守相应 GPL 条件，包括适用的源码提供义务。商业销售可以进行，但 MIT 自有源码声明不免除这些义务。
 
-The native command-line tools are separately invoked programs. Their own licenses, source-distribution requirements and notices remain applicable. FFmpeg is a shared LGPL build; compatible shared libraries can be replaced. PyInstaller's bootloader exception applies to the bootloader, not to unrelated dependencies.
+The native command-line tools are separately invoked programs. Their licenses, source-distribution requirements and notices remain applicable. FFmpeg is a shared LGPL build. Compatible modified tools/libraries may be loaded from an explicit `MUSIC_ORGANIZER_TOOLS` directory, or bundled by rebuilding. The optimized v1.4.0 EXE uses Nuitka and GCC `-O3` + LTO; Nuitka's Runtime Library Exception permits independent application output under its own terms. The optional PyInstaller builder retains its bootloader exception. Neither exception waives unrelated dependency obligations.
 
 ## Components
 
@@ -26,6 +26,8 @@ The native command-line tools are separately invoked programs. Their own license
 | darkdetect | 0.8.0, BSD-3-Clause | https://github.com/albertosottile/darkdetect |
 | packaging | 26.3, Apache-2.0 OR BSD-2-Clause | https://github.com/pypa/packaging |
 | PyInstaller bootloader | 6.22.3, GPL with bootloader exception | https://github.com/pyinstaller/pyinstaller/tree/v6.22.3 |
+| Nuitka compiler/runtime | 4.3.5, AGPL-3.0-or-later with Runtime Library Exception | https://github.com/Nuitka/Nuitka/tree/4.3.5 |
+| Onefile zstd compression | zstandard 0.25.0 / bundled zstd, BSD licenses | https://github.com/indygreg/python-zstandard |
 | FFmpeg / FFprobe | n8.1.3-34-ga35157abb9, shared LGPLv3 build | https://github.com/FFmpeg/FFmpeg/tree/a35157abb9 |
 | FFmpeg build recipes / included components | autobuild-2026-11-09-12-42 | https://github.com/FFmpeg-Builds/FFmpeg-Builds/releases/tag/autobuild-2026-11-09-12-42 |
 | ncmdump | 1.5.1, MIT | https://github.com/taurusxin/ncmdump/tree/1.5.1 |
@@ -42,7 +44,7 @@ The native command-line tools are separately invoked programs. Their own license
 
 Retained texts are under `resources/Licenses/`, `native/platformaudio/LICENSE-*` and `native/platformaudio/vendor/`. Preparation gathers additional runtime notices. Generated artifact versions and checksums are recorded in `resources/Dependencies.json` and `resources/PlatformAudio.json`; download origins are pinned in the build scripts.
 
-For binary redistribution, supply the applicable corresponding sources (including relevant external-library sources and build information), notices and any required relinking/replacement materials. An upstream URL alone is not a substitute for source-delivery obligations. This repository publishes the application's source and decoder sources; its existence is not a claim that an arbitrary binary bundle already satisfies every dependency's distribution requirements.
+The v1.4.0 release accompanies its EXE with application and pinned third-party source ZIPs, including relevant copyleft native-library sources and build recipes. The manifest is `resources/ThirdPartySources.json`; download/verify/package them using `source_bundle.py`. See [corresponding-source and replacement instructions](docs/CORRESPONDING_SOURCES.md). Further binary redistribution must preserve applicable sources, notices and replacement/relinking permissions. An upstream URL alone does not replace a source-delivery requirement.
 
 ## Changes and provenance
 

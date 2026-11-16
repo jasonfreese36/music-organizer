@@ -1,4 +1,5 @@
 """Release-level metadata lookup with persistent caching and service rate limits."""
+from i18n import tr
 import hashlib
 import json
 import os
@@ -21,9 +22,9 @@ from model import VERSION, Cancelled, IMAGE_EXTS, count_tag, match_name, normali
 
 USER_AGENT = f"MusicOrganizer/{VERSION} (Windows personal audio-library organizer; MusicBrainz + CoverArtArchive)"
 SOURCES = {
-    "musicbrainz": dict(name="MusicBrainz", description="实体发行与数字发行资料，含厂牌、目录号和多碟信息。", tags=True, covers=False, url="https://musicbrainz.org"),
-    "coverartarchive": dict(name="Cover Art Archive", description="与 MusicBrainz 发行版本对应的唱片封面。", tags=False, covers=True, url="https://coverartarchive.org"),
-    "itunes": dict(name="Apple iTunes", description="按地区检索数字发行、曲目资料与高清封面。", tags=True, covers=True, url="https://itunes.apple.com"),
+    "musicbrainz": dict(name="MusicBrainz", description=tr('实体发行与数字发行资料，含厂牌、目录号和多碟信息。'), tags=True, covers=False, url="https://musicbrainz.org"),
+    "coverartarchive": dict(name="Cover Art Archive", description=tr('与 MusicBrainz 发行版本对应的唱片封面。'), tags=False, covers=True, url="https://coverartarchive.org"),
+    "itunes": dict(name="Apple iTunes", description=tr('按地区检索数字发行、曲目资料与高清封面。'), tags=True, covers=True, url="https://itunes.apple.com"),
 }
 
 
@@ -69,7 +70,7 @@ class HTTP:
             with urllib.request.urlopen(request, timeout=timeout, context=self.ssl) as response:
                 raw = response.read(limit + 1)
                 if len(raw) > limit:
-                    raise ValueError("在线资源超过大小限制")
+                    raise ValueError(tr('在线资源超过大小限制'))
                 status = 200
         except urllib.error.HTTPError as exc:
             if exc.code not in (404, 410):
@@ -114,7 +115,7 @@ class Catalog:
         if overrides:
             for track in tracks:
                 if path := overrides.get(track.edit_key):
-                    return make_cover(Path(path).read_bytes(), f"用户指定：{Path(path).name}")
+                    return make_cover(Path(path).read_bytes(), tr('用户指定：{0}').format(Path(path).name))
         # A front cover inside the same release takes priority over directory illustrations.
         for track in sorted(tracks, key=lambda t: not t.has_cover):
             self.cancel.check()
@@ -133,15 +134,15 @@ class Catalog:
                     if path.suffix.casefold() not in IMAGE_EXTS or not path.is_file() or reparse(path):
                         continue
                     stem = normalize(path.stem)
-                    preferred = stem in {"cover", "folder", "front", "album", "albumart", "封面", "albumartsmall"}
-                    if not preferred and not ("front" in stem or "封面" in stem):
+                    preferred = stem in {"cover", "folder", "front", "album", "albumart", tr('封面'), "albumartsmall"}
+                    if not preferred and not ("front" in stem or tr('封面') in stem):
                         continue
                     candidates.append((not preferred, path))
             except OSError:
                 continue
         for _, path in sorted(candidates, key=lambda row: (row[0], str(row[1]))):
             try:
-                return make_cover(path.read_bytes(), f"本地图片：{path.name}")
+                return make_cover(path.read_bytes(), tr('本地图片：{0}').format(path.name))
             except (OSError, ValueError):
                 continue
         # A single image in a release directory is a reasonable local candidate.
@@ -149,7 +150,7 @@ class Catalog:
             try:
                 pictures = [p for p in folder.iterdir() if p.is_file() and not reparse(p) and p.suffix.casefold() in IMAGE_EXTS]
                 if len(pictures) == 1:
-                    return make_cover(pictures[0].read_bytes(), f"本地唯一图片：{pictures[0].name}")
+                    return make_cover(pictures[0].read_bytes(), tr('本地唯一图片：{0}').format(pictures[0].name))
             except (OSError, ValueError):
                 pass
         return None

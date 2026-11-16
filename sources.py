@@ -1,4 +1,5 @@
 """Source selection, release comparison and live (uncached) connectivity checks."""
+from i18n import tr
 import json
 import time
 from datetime import datetime
@@ -16,7 +17,7 @@ TEST_APPLE_ID = "1474815798"
 def artwork_source(release):
     source=release.get('source','')
     provider=release.get('cover_provider',release.get('provider'))
-    name=SOURCES.get(provider,{}).get('name','封面来源')
+    name=SOURCES.get(provider,{}).get('name',tr('封面来源'))
     return source if source.startswith(name) else name+' · '+source
 
 
@@ -74,14 +75,14 @@ def apply_release(tracks, release, aligned, manual=False):
                 else:
                     track.tags.setdefault("genre", song["genre"])
         elif manual:
-            track.issues.append("手选发行的部分曲目未对应：保留此音轨的曲名与轨序")
+            track.issues.append(tr('手选发行的部分曲目未对应：保留此音轨的曲名与轨序'))
         for key in ("date", "label", "catalognumber", "barcode"):
             value = release.get(key)
             if same_edition and value and (manual or not track.tags.get(key) or key == "date" and len(track.tags[key]) < len(value)):
                 track.tags[key] = value
         if not same_edition:
-            track.issues.append("在线版本的年份或目录号不同，保留本地发行字段")
-        track.metadata_source = ("用户选择 · " if manual else "") + release.get("source", "")
+            track.issues.append(tr('在线版本的年份或目录号不同，保留本地发行字段'))
+        track.metadata_source = (tr('用户选择 · ') if manual else "") + release.get("source", "")
 
 
 def candidate(release, artist, album, tracks, catalog):
@@ -96,7 +97,7 @@ def candidate(release, artist, album, tracks, catalog):
 
 def search_candidates(catalog, artist, album, tracks=(), providers=None):
     if not artist.strip() or not album.strip():
-        raise ValueError("请填写艺术家和专辑名称")
+        raise ValueError(tr('请填写艺术家和专辑名称'))
     allowed = set(catalog.settings.tag_sources)
     if "coverartarchive" in catalog.settings.cover_sources:
         allowed.add("musicbrainz")
@@ -105,13 +106,13 @@ def search_candidates(catalog, artist, album, tracks=(), providers=None):
     if providers is not None:
         allowed.intersection_update(providers)
     if not allowed:
-        raise ValueError("请先在“数据源”中启用至少一个在线来源")
+        raise ValueError(tr('请先在“数据源”中启用至少一个在线来源'))
     results, errors = [], []
     for provider in ("musicbrainz", "itunes"):
         if provider not in allowed:
             continue
         catalog.cancel.check()
-        catalog.emit("lookup_progress", f"正在检索 {SOURCES[provider]['name']}…")
+        catalog.emit("lookup_progress", tr('正在检索 {0}…').format(SOURCES[provider]['name']))
         try:
             releases = getattr(catalog, provider)(artist, album, tracks, collect=True, loose=True, limit=4)
             for release in releases:
@@ -137,11 +138,11 @@ def enrich(catalog, tracks, overrides=None, selections=None):
     if selected_cover:
         try:
             path = Path(selected_cover["path"])
-            cover = make_cover(path.read_bytes(), "用户选择 · "+selected_cover.get("source", str(path)))
+            cover = make_cover(path.read_bytes(), tr('用户选择 · ')+selected_cover.get("source", str(path)))
         except (OSError, ValueError, KeyError) as exc:
-            errors.append(f"选定封面缓存无法读取：{exc}")
+            errors.append(tr('选定封面缓存无法读取：{0}').format(exc))
             for track in tracks:
-                track.issues.append("选定封面缓存不存在，请重新选择该封面")
+                track.issues.append(tr('选定封面缓存不存在，请重新选择该封面'))
     if not cover:
         cover = catalog.local_cover(tracks, overrides)
     artist = representative(tracks, "albumartist")
@@ -192,20 +193,20 @@ def enrich(catalog, tracks, overrides=None, selections=None):
             except Cancelled:
                 raise
             except Exception as exc:
-                errors.append(f"{SOURCES[provider]['name']} 封面：{str(exc)[:180]}")
+                errors.append(tr('{0} 封面：{1}').format(SOURCES[provider]['name'], str(exc)[:180]))
     if errors:
-        catalog.emit("log", f"在线资料 {album}：{'；'.join(errors)}")
+        catalog.emit("log", tr('在线资料 {0}：{1}').format(album, '；'.join(errors)))
     for track in tracks:
         if not cover:
-            track.issues.append("缺少封面：可在“在线资料”中选择其他发行或手动指定图片")
+            track.issues.append(tr('缺少封面：可在“在线资料”中选择其他发行或手动指定图片'))
         if not release and catalog.settings.online and catalog.settings.tag_sources:
-            track.issues.append("启用的标签来源中没有足够吻合的发行，保留原标签")
+            track.issues.append(tr('启用的标签来源中没有足够吻合的发行，保留原标签'))
     return cover
 
 
 def test_source(http, source_id, settings, cancel):
     if source_id not in SOURCES:
-        raise ValueError("未知数据源")
+        raise ValueError(tr('未知数据源'))
     start = time.perf_counter()
     result = dict(source=source_id, name=SOURCES[source_id]["name"], state="error", tags=False, covers=False,
                   checked_at=datetime.now().astimezone().isoformat(timespec="seconds"), detail="", endpoints=[])
@@ -214,43 +215,43 @@ def test_source(http, source_id, settings, cancel):
         result["endpoints"].append(url)
         raw = http.fetch(url, cancel, ttl=0, limit=8*1024**2, timeout=10)
         if not raw:
-            raise ValueError("测试接口未返回内容")
+            raise ValueError(tr('测试接口未返回内容'))
         return json.loads(raw.decode("utf-8"))
 
     try:
         if source_id == "musicbrainz":
             doc = fresh_json(f"https://musicbrainz.org/ws/2/release/{TEST_MBID}?fmt=json")
             if doc.get("id") != TEST_MBID:
-                raise ValueError("返回内容不是发行资料 API 的有效响应")
-            result.update(state="ok", tags=True, detail="发行 API 返回有效资料；未使用缓存")
+                raise ValueError(tr('返回内容不是发行资料 API 的有效响应'))
+            result.update(state="ok", tags=True, detail=tr('发行 API 返回有效资料；未使用缓存'))
         elif source_id == "coverartarchive":
             doc = fresh_json(f"https://coverartarchive.org/release/{TEST_MBID}")
             image = next((i for i in doc.get("images", []) if i.get("front")), None)
             if not image:
-                result.update(state="partial", detail="封面 API 已连接，测试发行当前没有正面封面")
+                result.update(state="partial", detail=tr('封面 API 已连接，测试发行当前没有正面封面'))
             else:
                 url = image.get("thumbnails", {}).get("small") or image["image"]
                 result["endpoints"].append(url)
                 data = http.fetch(url, cancel, ttl=0, timeout=10)
                 if not data:
-                    raise ValueError("图片服务未返回封面")
+                    raise ValueError(tr('图片服务未返回封面'))
                 picture = make_cover(data, url)
-                result.update(state="ok", covers=True, detail=f"封面 API 与图片下载可用 · {picture.width}×{picture.height}；未使用缓存")
+                result.update(state="ok", covers=True, detail=tr('封面 API 与图片下载可用 · {0}×{1}；未使用缓存').format(picture.width, picture.height))
         else:
             doc = fresh_json(f"https://itunes.apple.com/lookup?id={TEST_APPLE_ID}&country={settings.country}")
             if not isinstance(doc.get("results"), list):
-                raise ValueError("返回内容不是 iTunes API 的有效响应")
-            result.update(state="partial", tags=True, detail="资料 API 已连接；此地区未返回测试专辑")
+                raise ValueError(tr('返回内容不是 iTunes API 的有效响应'))
+            result.update(state="partial", tags=True, detail=tr('资料 API 已连接；此地区未返回测试专辑'))
             if doc["results"]:
-                result["detail"] = "资料 API 可用；测试封面下载…"
+                result["detail"] = tr('资料 API 可用；测试封面下载…')
                 url = next((r.get("artworkUrl100") for r in doc["results"] if r.get("artworkUrl100")), None)
                 if url:
                     result["endpoints"].append(url)
                     data = http.fetch(url, cancel, ttl=0, timeout=10)
                     if not data:
-                        raise ValueError("封面图片服务未返回内容")
+                        raise ValueError(tr('封面图片服务未返回内容'))
                     make_cover(data, url)
-                    result.update(state="ok", covers=True, detail="发行 API 与封面图片下载均可用；未使用缓存")
+                    result.update(state="ok", covers=True, detail=tr('发行 API 与封面图片下载均可用；未使用缓存'))
         cancel.check()
     except Cancelled:
         raise
@@ -267,7 +268,7 @@ def test_sources(http, settings, cancel, emit=lambda *a: None, providers=None):
     for source in (tuple(providers) if providers is not None else tuple(SOURCES)):
         cancel.check()
         emit("source_testing",source)
-        emit("log", f"实时测试 {SOURCES[source]['name']}（绕过缓存）")
+        emit("log", tr('实时测试 {0}（绕过缓存）').format(SOURCES[source]['name']))
         row = test_source(http, source, settings, cancel)
         results.append(row)
         emit("source_test", row)

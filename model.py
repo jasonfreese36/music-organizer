@@ -1,3 +1,4 @@
+from i18n import tr
 import csv
 import hashlib
 import io
@@ -18,7 +19,7 @@ from platform_formats import ENCRYPTED_EXTS
 
 
 APP_NAME = "Music Organizer"
-VERSION = "1.3.0"
+VERSION = "1.4.0"
 ALBUMS = "Albums"
 ARCHIVES = "Disc Archives"
 REVIEW = "Needs Review"
@@ -62,7 +63,7 @@ class Cancel:
 
     def check(self):
         if self.event.is_set():
-            raise Cancelled("已停止")
+            raise Cancelled(tr('已停止'))
 
     def stop(self):
         self.event.set()
@@ -134,7 +135,7 @@ def bytes_hash(path, cancel, limit=None):
             if limit is not None:
                 limit -= len(block)
     if limit:
-        raise ValueError("未读到预期的文件长度")
+        raise ValueError(tr('未读到预期的文件长度'))
     return digest.hexdigest()
 
 
@@ -145,27 +146,27 @@ def reparse(path):
 
 def validated_roots(source, dest):
     if not str(source).strip() or not str(dest).strip():
-        raise ValueError("请选择源目录和独立的目标目录")
+        raise ValueError(tr('请选择源目录和独立的目标目录'))
     src = Path(source).expanduser().resolve(strict=True)
     out = Path(dest).expanduser().resolve()
     if not src.is_dir():
-        raise ValueError("源路径必须是目录")
+        raise ValueError(tr('源路径必须是目录'))
     if out.exists() and not out.is_dir():
-        raise ValueError("目标路径必须是目录")
+        raise ValueError(tr('目标路径必须是目录'))
     if src.is_relative_to(out) or out.is_relative_to(src):
-        raise ValueError("源目录与目标目录必须彼此独立")
+        raise ValueError(tr('源目录与目标目录必须彼此独立'))
     if len(str(out)) > 120:
-        raise ValueError("目标路径过长，请选择更靠近磁盘根目录的位置")
+        raise ValueError(tr('目标路径过长，请选择更靠近磁盘根目录的位置'))
     return src, out
 
 
 def at(root, rel):
     rel = Path(rel)
     if rel.anchor or ".." in rel.parts:
-        raise ValueError(f"无效路径 {rel}")
+        raise ValueError(tr('无效路径 {0}').format(rel))
     target = root / rel
     if not target.resolve().is_relative_to(root):
-        raise ValueError(f"路径超出已选目录 {rel}")
+        raise ValueError(tr('路径超出已选目录 {0}').format(rel))
     return target
 
 
@@ -206,6 +207,7 @@ class Profile:
     seconds: float
     layout: str = ""
     bitrate: int = 0
+    codec_profile: str = ""
 
     @property
     def lossless(self):
@@ -229,7 +231,7 @@ class Item:
     def check(self):
         st = self.path.stat()
         if (st.st_size, st.st_mtime_ns) != (self.size, self.mtime) or reparse(self.path):
-            raise ValueError(f"源文件自扫描后发生变化 {self.rel}")
+            raise ValueError(tr('源文件自扫描后发生变化 {0}').format(self.rel))
 
 
 @dataclass
@@ -311,34 +313,47 @@ class Settings:
     decrypt_workers: int = 2
     decrypt_verify: bool = True
     platform_key_file: str = ""
+    output_profile: str = "library"
+    ipod_model: str = "universal"
+    apple_quality: str = "standard"
+    apple_archive_mode: str = "none"
+    apple_archive_folder: str = ""
 
     def __post_init__(self):
         for name in ("workers","sacd_rate","aac_kbps","sample_rate","pcm_bits","flac_compression","mp3_kbps","mp3_vbr","decrypt_workers"):
-            if type(getattr(self,name)) is not int:raise ValueError(f"{name} 需要整数")
+            if type(getattr(self,name)) is not int:raise ValueError(tr('{0} 需要整数').format(name))
         for name in ("online","keep_sidecars","verify_pcm","reencode_lossy","recompress_flac","write_cover_file","write_playlists","decrypt_enabled","decrypt_verify"):
-            if type(getattr(self,name)) is not bool:raise ValueError(f"{name} 需要开关值")
+            if type(getattr(self,name)) is not bool:raise ValueError(tr('{0} 需要开关值').format(name))
         object.__setattr__(self, "tag_sources", tuple(dict.fromkeys(self.tag_sources)))
         object.__setattr__(self, "cover_sources", tuple(dict.fromkeys(self.cover_sources)))
         if set(self.tag_sources) - {"musicbrainz", "itunes"} or set(self.cover_sources) - {"coverartarchive", "itunes"}:
-            raise ValueError("未知的标签或封面来源")
+            raise ValueError(tr('未知的标签或封面来源'))
         if not 1 <= self.workers <= 16 or self.sacd_rate not in (88200, 176400):
-            raise ValueError("并行数或 SACD 采样率无效")
+            raise ValueError(tr('并行数或 SACD 采样率无效'))
         if self.sacd_area not in ("stereo", "multi", "both") or not 96 <= self.aac_kbps <= 512:
-            raise ValueError("SACD 声道选项或 AAC 比特率无效")
+            raise ValueError(tr('SACD 声道选项或 AAC 比特率无效'))
         if self.lossless_format not in ("flac", "mp3", "aac") or self.lossy_format not in ("preserve", "flac", "mp3", "aac"):
-            raise ValueError("输出格式必须为 FLAC、MP3 或 AAC")
+            raise ValueError(tr('输出格式必须为 FLAC、MP3 或 AAC'))
         if self.resample_mode not in ("preserve", "limit", "fixed") or self.sample_rate not in (8000,16000,22050,24000,32000,44100,48000,88200,96000,176400,192000,352800,384000):
-            raise ValueError("采样率设置无效")
+            raise ValueError(tr('采样率设置无效'))
         if self.pcm_bits not in (0,16,24,32) or self.channels not in ("preserve","stereo","mono"):
-            raise ValueError("位深或声道设置无效")
+            raise ValueError(tr('位深或声道设置无效'))
         if self.resampler not in ("swr","soxr") or self.dither not in ("none","triangular","triangular_hp"):
-            raise ValueError("重采样或抖动设置无效")
+            raise ValueError(tr('重采样或抖动设置无效'))
         if not 0 <= self.flac_compression <= 12 or self.mp3_mode not in ("vbr","cbr") or not 0 <= self.mp3_vbr <= 9 or self.mp3_kbps not in (64,96,128,160,192,224,256,320):
-            raise ValueError("FLAC 压缩级别或 MP3 编码设置无效")
+            raise ValueError(tr('FLAC 压缩级别或 MP3 编码设置无效'))
         if self.id3_version not in ("preserve","3","4") or self.multidisc not in ("subfolder","prefix","flat"):
-            raise ValueError("标签版本或多碟命名方式无效")
+            raise ValueError(tr('标签版本或多碟命名方式无效'))
         if not 1<=self.decrypt_workers<=8 or not isinstance(self.platform_key_file,str) or len(self.platform_key_file)>32768:
-            raise ValueError("平台音频并行数或密钥文件路径无效")
+            raise ValueError(tr('平台音频并行数或密钥文件路径无效'))
+        if self.output_profile not in {"library","ipod","ios"} or self.ipod_model not in {"universal","classic_nano","shuffle"}:
+            raise ValueError(tr('设备输出预设无效'))
+        if self.apple_quality not in {"standard","compact","lossless"} or self.apple_archive_mode not in {"none","separate"}:
+            raise ValueError(tr('苹果设备品质或原盘归档选项无效'))
+        if not isinstance(self.apple_archive_folder,str) or len(self.apple_archive_folder)>32768:
+            raise ValueError(tr('原盘归档目录无效'))
+        if self.output_profile=="ipod" and self.ipod_model!="classic_nano" and self.apple_quality=="lossless":
+            raise ValueError(tr('通用 iPod / shuffle 预设使用 MP3；ALAC 无损选项适用于 classic / nano 或 iPhone / iPad'))
         from naming import validate_templates
         from rules import validate_rules
         validate_templates(self.folder_template,self.filename_template,self.disc_template)

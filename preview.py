@@ -1,4 +1,5 @@
 """Read-only plan using the same naming and conversion functions as the writer."""
+from i18n import tr
 from collections import Counter,defaultdict
 from pathlib import Path
 
@@ -25,10 +26,10 @@ def preview_rows(items,settings,tags_for=None):
         if item.kind in ("ncm","encrypted","iso","cue") or item.path in cue_images:
             if item.crypto:
                 from platform_audio import STATUS
-                rows.append(dict(source=str(item.rel),rule="解密后匹配",conversion=item.crypto.get("name","")+" · "+STATUS.get(item.crypto.get("state"),"待处理"),target="",note=item.crypto.get("detail","")));continue
-            rows.append(dict(source=str(item.rel),rule="展开后匹配",conversion="解密、提取或 CUE 分轨后确定",target="",note="此预览不会解密或展开原盘"));continue
+                rows.append(dict(source=str(item.rel),rule=tr('解密后匹配'),conversion=item.crypto.get("name","")+" · "+STATUS.get(item.crypto.get("state"),tr('待处理')),target="",note=item.crypto.get("detail","")));continue
+            rows.append(dict(source=str(item.rel),rule=tr('展开后匹配'),conversion=tr('解密、提取或 CUE 分轨后确定'),target="",note=tr('此预览不会解密或展开原盘')));continue
         if not item.profile or item.error:
-            rows.append(dict(source=str(item.rel),rule="",conversion="无法规划",target="",note=item.error));continue
+            rows.append(dict(source=str(item.rel),rule="",conversion=tr('无法规划'),target="",note=item.error));continue
         track=infer_track(item)
         if tags_for:track.tags=dict(tags_for(item))
         tracks.append(track)
@@ -45,9 +46,9 @@ def preview_rows(items,settings,tags_for=None):
             plan=plan_audio(track,settings)
             rel=album_folder(members[0],settings)/track_relative(track,settings,plan,i,multidisc)
             note=""
-            if plan.codec=="flac" and not track.profile.lossless:note="有损来源转 FLAC 不恢复音质"
-            rows.append(dict(source=str(track.source.rel),rule=plan.rule or "默认设置",conversion=plan.description,target=str(rel),note=note))
+            if plan.codec=="flac" and not track.profile.lossless:note=tr('有损来源转 FLAC 不恢复音质')
+            rows.append(dict(source=str(track.source.rel),rule=plan.rule or tr('默认设置'),conversion=plan.description,target=str(rel),note=note))
     counts=Counter(r["target"].casefold() for r in rows if r["target"])
     for row in rows:
-        if row["target"] and counts[row["target"].casefold()]>1:row["note"]+=("；" if row["note"] else "")+"存在同名目标，写入时校验去重或添加后缀"
+        if row["target"] and counts[row["target"].casefold()]>1:row["note"]+=("；" if row["note"] else "")+tr('存在同名目标，写入时校验去重或添加后缀')
     return sorted(rows,key=lambda r:r["source"].casefold())

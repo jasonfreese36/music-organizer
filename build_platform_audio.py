@@ -59,7 +59,7 @@ def build_platform_audio(force=False):
         shutil.copyfile(SOURCE/name,legal/name)
     shutil.copyfile(folder/"go/LICENSE",legal/"LICENSE-Go")
     shutil.copyfile(SOURCE/"vendor/golang.org/x/crypto/LICENSE",legal/"LICENSE-Go-Crypto")
-    info=dict(version="1.3.0",compiler=SDK,source_sha256=fingerprint,binary_sha256=sha(target),
+    info=dict(version="1.4.0",compiler=SDK,source_sha256=fingerprint,binary_sha256=sha(target),
               sources=dict(unlock_music="lishanxin/unlockMusic@380ed78b6b0bcc70250e9a97ed5189795c4466f2",
                            legacy_kgm="Lin-M11/MusicUnlock@58c4f9b6e13ffc8dd8bd86273f39fe9f585ec428",
                            kgg="lizipeng0013/kgg-dec.mirror@b3bb5cb15933fb6c2c859665041d728e24777ca9",

@@ -1,4 +1,5 @@
 """Quiet light-theme desktop workspace, rendered with native Tk + CustomTkinter."""
+from i18n import tr
 import tkinter as tk
 from tkinter import ttk
 
@@ -18,7 +19,8 @@ ACCENT = color('#6556DC')
 HOVER = color('#5545C8')
 TINT = color('#EEEBFC')
 GREEN = color('#2A8C71')
-FONT = "Microsoft YaHei UI"
+from i18n import get_language
+FONT = "Segoe UI" if get_language()=="en" else "Microsoft YaHei UI"
 
 
 def label(master, text=None, variable=None, size=14, bold=False, color=INK, **kwargs):
@@ -78,7 +80,7 @@ class NotebookBridge:
     def select(self, index):
         self.app.show_page({0:"library", 1:"activity", 2:"activity", 3:"settings"}[index])
         if index in (1, 2):
-            self.app.activity_tabs.set("整理结果" if index == 1 else "运行日志")
+            self.app.activity_tabs.set(tr('整理结果') if index == 1 else tr('运行日志'))
 
 
 def styles(app):
@@ -132,8 +134,8 @@ def build(app, help_text):
     ctk.CTkLabel(logo, text="♪", font=("Segoe UI", 27), text_color=("#FFFFFF","#171A23")).pack(expand=True)
     label(brand, "Music\nOrganizer", size=16, bold=True, justify="left").pack(side="left")
     label(sidebar, "WORKSPACE", size=10, color=color('#B0ADBF')).pack(anchor="w", padx=28, pady=(0, 10))
-    entries = [("library", "▤", "曲库整理"), ("online", "⌕", "在线资料"), ("sources", "◇", "数据源"),
-               ("activity", "≡", "运行记录"), ("settings", "⚙", "高级设置")]
+    entries = [("library", "▤", tr('曲库整理')), ("online", "⌕", tr('在线资料')), ("sources", "◇", tr('数据源')),
+               ("activity", "≡", tr('运行记录')), ("settings", "⚙", tr('高级设置'))]
     for key, icon, title in entries:
         nav = ctk.CTkButton(sidebar, text=f"{icon}     {title}", anchor="w", width=152, height=43, corner_radius=10,
                             fg_color="transparent", hover_color=color('#F4F2FB'), text_color=color('#838096'), font=(FONT,14),
@@ -142,7 +144,7 @@ def build(app, help_text):
         app.nav[key] = nav
     bottom = ctk.CTkFrame(sidebar, fg_color=color('#F8F7FC'), corner_radius=12)
     bottom.pack(side="bottom", fill="x", padx=20, pady=22)
-    label(bottom, "本地曲库，悉心归档", size=11, color=color('#928BA9')).pack(anchor="w", padx=12, pady=(13, 1))
+    label(bottom, tr('本地曲库，悉心归档'), size=11, color=color('#928BA9')).pack(anchor="w", padx=12, pady=(13, 1))
     label(bottom, f"v{VERSION}  ·  FLAC / MP3 / AAC", size=10, color=color('#ABA5BA')).pack(anchor="w", padx=12, pady=(0, 12))
 
     body = ctk.CTkFrame(app, fg_color="transparent")
@@ -151,8 +153,8 @@ def build(app, help_text):
     body.grid_rowconfigure(1, weight=1)
     header = ctk.CTkFrame(body, fg_color="transparent")
     header.grid(row=0, column=0, sticky="ew", pady=(0, 23))
-    app.page_title = tk.StringVar(value="曲库整理")
-    app.page_description = tk.StringVar(value="让每一张专辑，井然有序。")
+    app.page_title = tk.StringVar(value=tr('曲库整理'))
+    app.page_description = tk.StringVar(value=tr('让每一张专辑，井然有序。'))
     label(header, variable=app.page_title, size=27, bold=True).pack(anchor="w")
     label(header, variable=app.page_description, size=13, color=MUTED).pack(anchor="w", pady=(5, 0))
     app.pages = {}
@@ -177,7 +179,7 @@ def build(app, help_text):
     line = ctk.CTkFrame(footer, fg_color="transparent")
     line.grid(row=0, column=0, sticky="ew", padx=20, pady=(13, 9))
     label(line, variable=app.progress_text, size=12, color=color('#716B86')).pack(side="left")
-    app.source_summary = tk.StringVar(value="2 个标签源 · 2 个封面源")
+    app.source_summary = tk.StringVar(value=tr('2 个标签源 · 2 个封面源'))
     label(line, variable=app.source_summary, size=11, color=color('#9C95B0')).pack(side="right")
     app.progress = ttk.Progressbar(footer, mode="determinate", maximum=100)
     app.progress.grid(row=1, column=0, sticky="ew", padx=20, pady=(0, 10), ipady=0)
@@ -185,11 +187,11 @@ def build(app, help_text):
     actions.grid(row=2, column=0, sticky="ew", padx=20, pady=(0, 16))
     actions.grid_columnconfigure(0, weight=1)
     label(actions, variable=app.status, size=11, color=MUTED, wraplength=450, justify="left").grid(row=0,column=0,sticky="w",padx=(0,10))
-    app.scan_button = button(actions, "只读扫描", app._scan, width=100)
+    app.scan_button = button(actions, tr('只读扫描'), app._scan, width=100)
     app.scan_button.grid(row=0,column=1,padx=(0,8))
-    app.cancel_button = button(actions,"停止",app._cancel,width=65,state="disabled")
+    app.cancel_button = button(actions,tr('停止'),app._cancel,width=65,state="disabled")
     app.cancel_button.grid(row=0,column=2,padx=(0,8))
-    app.run_button = button(actions,"开始整理  →",app._run,primary=True,width=126,state="disabled")
+    app.run_button = button(actions,tr('开始整理  →'),app._run,primary=True,width=126,state="disabled")
     app.run_button.grid(row=0,column=3)
     app.notebook = NotebookBridge(app)
     app.show_page("library")
@@ -202,18 +204,18 @@ def build_library(app, page):
     paths = card(page)
     paths.grid(row=0,column=0,columnspan=2,sticky="ew",pady=(0,16))
     paths.grid_columnconfigure(1,weight=1)
-    for row,(title,var,action) in enumerate((("音乐来源",app.source,app._browse_source),("整理目标",app.dest,app._browse_dest))):
+    for row,(title,var,action) in enumerate(((tr('音乐来源'),app.source,app._browse_source),(tr('整理目标'),app.dest,app._browse_dest))):
         label(paths,title,size=12,color=color('#91899F')).grid(row=row,column=0,padx=(20,15),pady=(16 if row==0 else 7, 7 if row==0 else 16),sticky="w")
         entry=ctk.CTkEntry(paths,textvariable=var,height=36,corner_radius=8,border_width=0,fg_color=color('#F7F7FB'),text_color=color('#625D78'),font=(FONT,12))
         entry.grid(row=row,column=1,sticky="ew",pady=(16 if row==0 else 7,7 if row==0 else 16))
-        choose=button(paths,"选择目录",action,width=94)
+        choose=button(paths,tr('选择目录'),action,width=94)
         choose.grid(row=row,column=2,padx=(10,20),pady=(16 if row==0 else 7,7 if row==0 else 16))
         if row==0:app.src_entry,app.src_button=entry,choose
         else:app.dst_entry,app.dst_button=entry,choose
     app.summary_files=tk.StringVar(value="—");app.summary_albums=tk.StringVar(value="—");app.summary_size=tk.StringVar(value="—")
     metrics=ctk.CTkFrame(page,fg_color="transparent")
     metrics.grid(row=1,column=0,columnspan=2,sticky="ew",pady=(0,16))
-    for i,(var,title) in enumerate(((app.summary_files,"音频项目"),(app.summary_albums,"专辑分组"),(app.summary_size,"源文件大小"))):
+    for i,(var,title) in enumerate(((app.summary_files,tr('音频项目')),(app.summary_albums,tr('专辑分组')),(app.summary_size,tr('源文件大小')))):
         metric=ctk.CTkFrame(metrics,fg_color="transparent")
         metric.pack(side="left",padx=(4,48))
         label(metric,variable=var,size=23,bold=True).pack(side="left",padx=(0,10))
@@ -223,19 +225,19 @@ def build_library(app, page):
     listing.grid_columnconfigure(0,weight=1);listing.grid_rowconfigure(1,weight=1)
     top=ctk.CTkFrame(listing,fg_color="transparent")
     top.grid(row=0,column=0,sticky="ew",padx=20,pady=(17,13))
-    label(top,"音乐文件",size=15,bold=True).pack(side="left")
-    ctk.CTkEntry(top,textvariable=app.filter,placeholder_text="筛选曲名、艺术家或专辑",width=220,height=33,corner_radius=8,
+    label(top,tr('音乐文件'),size=15,bold=True).pack(side="left")
+    ctk.CTkEntry(top,textvariable=app.filter,placeholder_text=tr('筛选曲名、艺术家或专辑'),width=220,height=33,corner_radius=8,
                  fg_color=color('#F7F7FB'),border_width=0,font=(FONT,12)).pack(side="right")
-    label(top,"筛选",size=11,color=MUTED).pack(side="right",padx=(0,10))
+    label(top,tr('筛选'),size=11,color=MUTED).pack(side="right",padx=(0,10))
     box=ctk.CTkFrame(listing,fg_color=WHITE,corner_radius=0)
     box.grid(row=1,column=0,sticky="nsew",padx=14,pady=(0,12))
-    app.preview=tree(box,[("title","曲名 / 文件",220),("artist","艺术家",140),("album","专辑",210),("format","格式",78),("cover","封面",55)],app.scale)
+    app.preview=tree(box,[("title",tr('曲名 / 文件'),220),("artist",tr('艺术家'),140),("album",tr('专辑'),210),("format",tr('格式'),78),("cover",tr('封面'),55)],app.scale)
     app.preview.bind("<<TreeviewSelect>>",app._selection)
     app.preview.bind("<Double-1>",lambda e:app._edit())
     app.filter.trace_add("write",lambda *a:app._show_items())
     app.empty_state=ctk.CTkFrame(box,fg_color=WHITE)
-    label(app.empty_state,"从一份音乐目录开始",size=19,bold=True,color=color('#6C6587')).pack(pady=(0,10))
-    label(app.empty_state,"扫描后，在这里浏览歌曲、版本与封面。",size=12,color=color('#AAA4B9')).pack()
+    label(app.empty_state,tr('从一份音乐目录开始'),size=19,bold=True,color=color('#6C6587')).pack(pady=(0,10))
+    label(app.empty_state,tr('扫描后，在这里浏览歌曲、版本与封面。'),size=12,color=color('#AAA4B9')).pack()
     app.empty_state.place(relx=.5,rely=.5,anchor="center")
     info=card(page,width=270)
     info.grid(row=2,column=1,sticky="ns");info.grid_propagate(False)
@@ -245,20 +247,20 @@ def build_library(app, page):
     app.placeholder_photo=placeholder(app)
     app.art_label=tk.Label(content,image=app.placeholder_photo,bg=resolved(WHITE),borderwidth=0)
     app.art_label.pack(pady=(8,13))
-    app.inspector_title=tk.StringVar(value="尚未选择音轨")
+    app.inspector_title=tk.StringVar(value=tr('尚未选择音轨'))
     label(content,variable=app.inspector_title,size=16,bold=True,wraplength=220,justify="left").pack(anchor="w",padx=12)
-    app.selection_sources=tk.StringVar(value="选择一首歌，查看发行资料。")
+    app.selection_sources=tk.StringVar(value=tr('选择一首歌，查看发行资料。'))
     label(content,variable=app.selection_sources,size=11,color=color('#A09AAF'),wraplength=220,justify="left").pack(anchor="w",padx=12,pady=(7,10))
     label(content,variable=app.detail,size=12,color=color('#858096'),wraplength=220,justify="left").pack(anchor="w",padx=12,pady=(0,10))
     actions=ctk.CTkFrame(info,fg_color="transparent")
     actions.grid(row=1,column=0,sticky="ew",padx=22,pady=(10,20));actions.grid_columnconfigure(0,weight=1)
-    app.lookup_button=button(actions,"查找封面与标签",app._open_lookup,primary=True,width=226)
+    app.lookup_button=button(actions,tr('查找封面与标签'),app._open_lookup,primary=True,width=226)
     app.lookup_button.grid(row=0,column=0,pady=(0,10),sticky="ew")
     editrow=ctk.CTkFrame(actions,fg_color="transparent")
     editrow.grid(row=1,column=0,sticky="ew");editrow.grid_columnconfigure((0,1),weight=1)
-    app.edit_button=button(editrow,"编辑标签",app._edit,width=102)
+    app.edit_button=button(editrow,tr('编辑标签'),app._edit,width=102)
     app.edit_button.grid(row=0,column=0,padx=(0,6),sticky="ew")
-    app.cover_button=button(editrow,"更换封面",app._cover_dialog,width=102)
+    app.cover_button=button(editrow,tr('更换封面'),app._cover_dialog,width=102)
     app.cover_button.grid(row=0,column=1,padx=(6,0),sticky="ew")
 
 
@@ -267,12 +269,12 @@ def build_sources(app,page):
     scroll.pack(fill="both",expand=True)
     scroll.grid_columnconfigure(0,weight=1)
     controls=card(scroll);controls.grid(row=0,column=0,sticky="ew",pady=(0,15))
-    label(controls,"你信任的音乐资料",size=17,bold=True).pack(anchor="w",padx=22,pady=(20,5))
-    label(controls,"分别选择标签与封面来源，或前往在线资料逐张选用发行版本。",size=12,color=MUTED).pack(anchor="w",padx=22)
+    label(controls,tr('你信任的音乐资料'),size=17,bold=True).pack(anchor="w",padx=22,pady=(20,5))
+    label(controls,tr('分别选择标签与封面来源，或前往在线资料逐张选用发行版本。'),size=12,color=MUTED).pack(anchor="w",padx=22)
     row=ctk.CTkFrame(controls,fg_color="transparent");row.pack(fill="x",padx=22,pady=(16,20))
-    switch=ctk.CTkSwitch(row,text="整理时自动联网",variable=app.online,progress_color=ACCENT,font=(FONT,13))
+    switch=ctk.CTkSwitch(row,text=tr('整理时自动联网'),variable=app.online,progress_color=ACCENT,font=(FONT,13))
     switch.pack(side="left");app.setting_widgets.append(switch)
-    app.test_sources_button=button(row,"测试全部来源",app._test_sources,primary=True,width=136)
+    app.test_sources_button=button(row,tr('测试全部来源'),app._test_sources,primary=True,width=136)
     app.test_sources_button.pack(side="right")
     app.source_cards={}
     for i,(key,source) in enumerate(SOURCES.items(),1):
@@ -283,27 +285,27 @@ def build_sources(app,page):
         label(panel,source['name'],size=16,bold=True).grid(row=0,column=1,sticky="w",pady=(19,0))
         label(panel,source['description'],size=12,color=MUTED,wraplength=480,justify="left").grid(row=1,column=1,sticky="nw",pady=(2,10))
         roles=ctk.CTkFrame(panel,fg_color="transparent");roles.grid(row=0,column=2,rowspan=2,padx=20,pady=18,sticky="ne")
-        for title,mapping in (("标签",app.tag_enabled),("封面",app.cover_enabled)):
+        for title,mapping in ((tr('标签'),app.tag_enabled),(tr('封面'),app.cover_enabled)):
             if key in mapping:
                 w=ctk.CTkCheckBox(roles,text=title,variable=mapping[key],width=74,checkbox_width=18,checkbox_height=18,
                                   corner_radius=5,fg_color=ACCENT,hover_color=HOVER,border_color=color('#C8C2DB'),font=(FONT,12))
                 w.pack(side="left",padx=(0,13));app.setting_widgets.append(w)
-        status=label(panel,"未测试",size=11,color=color('#9D96AE'),fg_color=color('#F3F1F8'),corner_radius=7,height=27)
+        status=label(panel,tr('未测试'),size=11,color=color('#9D96AE'),fg_color=color('#F3F1F8'),corner_radius=7,height=27)
         status.grid(row=2,column=1,sticky="w",pady=(0,17))
-        detail=label(panel,"点击测试，检查实时接口与图片服务。",size=11,color=color('#A19AAF'),wraplength=500,justify="left")
+        detail=label(panel,tr('点击测试，检查实时接口与图片服务。'),size=11,color=color('#A19AAF'),wraplength=500,justify="left")
         detail.grid(row=3,column=1,sticky="w",pady=(0,17))
-        action=button(panel,"测试连接",lambda k=key:app._test_sources((k,)),width=102)
+        action=button(panel,tr('测试连接'),lambda k=key:app._test_sources((k,)),width=102)
         action.grid(row=2,column=2,rowspan=2,padx=20,pady=(0,17),sticky="e")
         app.source_cards[key]=dict(status=status,detail=detail,button=action)
     priorities=card(scroll);priorities.grid(row=4,column=0,sticky="ew",pady=(3,12))
-    label(priorities,"自动匹配的优先来源",size=15,bold=True).pack(anchor="w",padx=22,pady=(18,14))
+    label(priorities,tr('自动匹配的优先来源'),size=15,bold=True).pack(anchor="w",padx=22,pady=(18,14))
     row=ctk.CTkFrame(priorities,fg_color="transparent");row.pack(fill="x",padx=22,pady=(0,20))
-    for title,var,values in (("标签优先",app.tag_priority,["MusicBrainz","Apple iTunes"]),("封面优先",app.cover_priority,["Cover Art Archive","Apple iTunes"])):
+    for title,var,values in ((tr('标签优先'),app.tag_priority,["MusicBrainz","Apple iTunes"]),(tr('封面优先'),app.cover_priority,["Cover Art Archive","Apple iTunes"])):
         label(row,title,size=12,color=MUTED).pack(side="left",padx=(0,10))
         w=ctk.CTkOptionMenu(row,variable=var,values=values,width=185,height=34,corner_radius=8,fg_color=color('#F2F0FA'),
                             button_color=color('#E9E5F7'),button_hover_color=color('#DED7F3'),text_color=color('#675E82'),font=(FONT,12))
         w.pack(side="left",padx=(0,24));app.setting_widgets.append(w)
-    label(scroll,"本地标签与图片优先保留；手选的发行资料和封面会覆盖自动匹配结果。",size=11,color=MUTED,wraplength=850,justify="left").grid(row=5,column=0,sticky="w",padx=4,pady=10)
+    label(scroll,tr('本地标签与图片优先保留；手选的发行资料和封面会覆盖自动匹配结果。'),size=11,color=MUTED,wraplength=850,justify="left").grid(row=5,column=0,sticky="w",padx=4,pady=10)
 
 
 def build_activity(app,page):
@@ -312,9 +314,9 @@ def build_activity(app,page):
                                     segmented_button_selected_hover_color=color('#E2DAF6'),segmented_button_unselected_color=color('#F8F7FC'),
                                     segmented_button_unselected_hover_color=color('#E8E3F7'),text_color=color('#766C94'),segmented_button_font=(FONT,13))
     app.activity_tabs.pack(fill="both",expand=True,padx=16,pady=12)
-    results=app.activity_tabs.add("整理结果");logs=app.activity_tabs.add("运行日志")
-    app.result_tree=tree(results,[("status","状态",75),("title","曲名",160),("album","专辑",170),("target","目标路径",330),
-                                 ("issues","提示",210),("metadata","标签来源",180),("artwork","封面来源",180)],app.scale)
+    results=app.activity_tabs.add(tr('整理结果'));logs=app.activity_tabs.add(tr('运行日志'))
+    app.result_tree=tree(results,[("status",tr('状态'),75),("title",tr('曲名'),160),("album",tr('专辑'),170),("target",tr('目标路径'),330),
+                                 ("issues",tr('提示'),210),("metadata",tr('标签来源'),180),("artwork",tr('封面来源'),180)],app.scale)
     app.result_tree.bind("<Double-1>",app._open_result)
     app.log=tk.Text(logs,wrap="word",bg=resolved(color('#FCFBFE')),fg=resolved(color('#777086')),font=("Consolas",10),relief="flat",state="disabled",highlightthickness=0)
     bar=ctk.CTkScrollbar(logs,command=app.log.yview,width=12);bar.pack(side="right",fill="y")
@@ -328,11 +330,11 @@ def build_settings(app,page,help_text):
 
 
 PAGE_COPY={
-    "library":("曲库整理","让每一张专辑，井然有序。"),
-    "online":("在线资料","比较发行版本，为标签与封面找到各自合适的来源。"),
-    "sources":("数据源","选择你信任的资料库，检查它们此刻的连接状态。"),
-    "activity":("运行记录","每一次整理，都有迹可循。"),
-    "settings":("高级设置","从外观到命名与转换，用直观规则定义你的曲库。"),
+    "library":(tr('曲库整理'),tr('让每一张专辑，井然有序。')),
+    "online":(tr('在线资料'),tr('比较发行版本，为标签与封面找到各自合适的来源。')),
+    "sources":(tr('数据源'),tr('选择你信任的资料库，检查它们此刻的连接状态。')),
+    "activity":(tr('运行记录'),tr('每一次整理，都有迹可循。')),
+    "settings":(tr('高级设置'),tr('从外观到命名与转换，用直观规则定义你的曲库。')),
 }
 
 

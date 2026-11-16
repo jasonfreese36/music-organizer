@@ -19,7 +19,7 @@ import (
 	"unicode/utf16"
 )
 
-const version = "PlatformAudio 1.3.0"
+const version = "PlatformAudio 1.4.0"
 
 type request struct {
 	Source  string `json:"source"`

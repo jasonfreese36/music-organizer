@@ -33,3 +33,15 @@ jobs:
         run: python test_advanced.py --root test-output/advanced
       - name: Test platform formats and key import
         run: python test_platforms.py --root test-output/platforms
+      - name: Test Apple exports and separate archives
+        run: python test_apple.py --root test-output/apple
+      - name: Test English catalog and metadata isolation
+        run: python test_i18n.py
+      - name: Test Apple disc conversion and archival
+        run: python test_apple_discs.py --root test-output/apple-discs
+      - name: Test tool cache and replacement
+        run: python test_runtime.py --root test-output/runtime
+      - name: Test GUI controls in English
+        run: python main.py --check-gui --language en --report test-output/Gui-English.json
+      - name: Test GUI controls in Chinese
+        run: python main.py --check-gui --language zh_CN --report test-output/Gui-Chinese.json

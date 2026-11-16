@@ -81,7 +81,7 @@ def prepare():
         target = LICENSES / rel
         if not target.exists():
             fetch(url, target)
-    packages = ("mutagen", "Pillow", "certifi", "opencc-python-reimplemented", "customtkinter", "darkdetect", "packaging", "pyinstaller")
+    packages = ("mutagen", "Pillow", "certifi", "opencc-python-reimplemented", "customtkinter", "darkdetect", "packaging", "pyinstaller", "nuitka", "zstandard", "ordered-set")
     for package in packages:
         dist = importlib.metadata.distribution(package)
         for entry in dist.files or []:

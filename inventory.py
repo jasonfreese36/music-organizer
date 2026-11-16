@@ -1,3 +1,4 @@
+from i18n import tr
 import os
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -25,7 +26,7 @@ def scan(root, tools, cancel, workers=4, emit=lambda *a: None,settings=None):
                 for entry in entries:
                     path = Path(entry.path)
                     if reparse(path):
-                        skipped.append((str(path.relative_to(root)), "跳过链接或重解析点"))
+                        skipped.append((str(path.relative_to(root)), tr('跳过链接或重解析点')))
                     elif entry.is_dir(follow_symlinks=False):
                         stack.append(path)
                     elif entry.is_file(follow_symlinks=False):
@@ -33,9 +34,9 @@ def scan(root, tools, cancel, workers=4, emit=lambda *a: None,settings=None):
         except OSError as exc:
             skipped.append((str(folder.relative_to(root)), str(exc)))
     paths.sort(key=lambda p: str(p).casefold())
-    emit("log", f"发现 {len(paths)} 个文件，正在读取音频信息")
+    emit("log", tr('发现 {0} 个文件，正在读取音频信息').format(len(paths)))
     keys=KeyStore(settings.platform_key_file if settings else "")
-    for issue in keys.issues:emit("log","密钥文件："+issue)
+    for issue in keys.issues:emit("log",tr('密钥文件：')+issue)
 
     def inspect(path):
         cancel.check()
@@ -71,7 +72,7 @@ def scan(root, tools, cancel, workers=4, emit=lambda *a: None,settings=None):
                 except Exception as exc:
                     skipped.append((str(futures[future].relative_to(root)), str(exc)))
                 if len(items) % 50 == 0 or len(items) + len(skipped) >= len(paths):
-                    emit("progress", ("读取文件", len(items), len(paths)))
+                    emit("progress", (tr('读取文件'), len(items), len(paths)))
         except BaseException:
             for future in futures:
                 future.cancel()
@@ -126,7 +127,7 @@ def infer_track(item, path=None, profile=None, tags=None, has_cover=None):
                   item.has_cover if has_cover is None else has_cover)
     track.origin_id = str(item.rel)
     if "title" not in item.tags and tags is None:
-        track.metadata_source = "文件名推断"
+        track.metadata_source = tr('文件名推断')
     if values["artist"] == "Unknown Artist":
-        track.issues.append("缺少可确认的艺术家")
+        track.issues.append(tr('缺少可确认的艺术家'))
     return track
