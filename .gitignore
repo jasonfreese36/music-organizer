@@ -1,0 +1,51 @@
+# Local Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Generated build tools, manifests, binaries and test libraries
+_downloads/
+_build/
+dist/
+build/
+*.spec
+resources/tools/
+resources/Dependencies.json
+resources/PlatformAudio.json
+test-output/
+*.log
+*.exe
+*.dll
+
+# Never commit music, personal settings, account material or keys
+.env
+.env.*
+!.env.example
+Settings.json
+Platform Keys.json
+KGMusicV3.db
+*.keys
+*.ncm
+*.mg3d
+*.kgm
+*.kgg
+*.kwm
+*.iso
+*.flac
+*.mp3
+*.m4a
+*.wav
+*.dsf
+*.dff
+*.pem
+*.key
+
+# Editor / OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini

@@ -1,0 +1,13 @@
+* text=auto eol=lf
+*.py text eol=lf
+*.go text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.txt text eol=lf
+*.bin binary
+*.ico binary
+resources/Licenses/** -whitespace
+native/platformaudio/LICENSE-* -whitespace
+native/platformaudio/vendor/** -whitespace
