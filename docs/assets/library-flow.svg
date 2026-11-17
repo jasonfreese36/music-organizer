@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="456" viewBox="0 0 1280 456" role="img" aria-labelledby="title desc">
+  <title id="title">From scattered files to an organized library</title>
+  <desc id="desc">Mixed downloads, rips and disc images pass through scanning, supported unlocking, conversion, tagging and organization. Source files are retained.</desc>
+  <defs>
+    <linearGradient id="background" x2="1" y2="1"><stop stop-color="#111728"/><stop offset="1" stop-color="#19172B"/></linearGradient>
+    <linearGradient id="art" x2="1" y2="1"><stop stop-color="#8574F4"/><stop offset="1" stop-color="#4D7BC3"/></linearGradient>
+  </defs>
+  <rect width="1280" height="456" rx="24" fill="url(#background)"/>
+  <g font-family="Segoe UI, Microsoft YaHei, Noto Sans CJK SC, sans-serif">
+    <rect x="24" y="24" width="384" height="408" rx="18" fill="#1A2132" stroke="#30384C"/>
+    <rect x="800" y="24" width="456" height="408" rx="18" fill="#1C2435" stroke="#4B456E"/>
+    <text x="48" y="62" fill="#A7B0C7" font-size="15" font-weight="700" letter-spacing="2">BEFORE</text>
+    <text x="48" y="96" fill="#F1F3FA" font-size="25" font-weight="600">Collected over the years</text>
+    <text x="448" y="72" fill="#B4A9F7" font-size="15" font-weight="700" letter-spacing="2">ONE WORKFLOW</text>
+    <text x="824" y="62" fill="#B6ACF6" font-size="15" font-weight="700" letter-spacing="2">AFTER</text>
+    <text x="824" y="96" fill="#F1F3FA" font-size="25" font-weight="600">Ready to browse and play</text>
+    <rect x="48" y="118" width="336" height="44" rx="8" fill="#242D41"/>
+    <path d="M66 131 h10 l4 4 v14 h-14 z m10 0 v5 h4" fill="none" stroke="#9BA6C0" stroke-width="1.5" stroke-linejoin="round"/>
+    <text x="92" y="146" fill="#CDD4E5" font-size="18">Downloads/001_83920.mp3</text>
+    <rect x="48" y="170" width="336" height="44" rx="8" fill="#242D41"/>
+    <path d="M66 183 h10 l4 4 v14 h-14 z m10 0 v5 h4" fill="none" stroke="#9BA6C0" stroke-width="1.5" stroke-linejoin="round"/>
+    <text x="92" y="198" fill="#CDD4E5" font-size="18">Rips/Album.wav + .cue</text>
+    <rect x="48" y="222" width="336" height="44" rx="8" fill="#242D41"/>
+    <path d="M66 235 h10 l4 4 v14 h-14 z m10 0 v5 h4" fill="none" stroke="#9BA6C0" stroke-width="1.5" stroke-linejoin="round"/>
+    <text x="92" y="250" fill="#CDD4E5" font-size="18">Cloud/Track.ncm</text>
+    <rect x="48" y="274" width="336" height="44" rx="8" fill="#242D41"/>
+    <path d="M66 287 h10 l4 4 v14 h-14 z m10 0 v5 h4" fill="none" stroke="#9BA6C0" stroke-width="1.5" stroke-linejoin="round"/>
+    <text x="92" y="302" fill="#CDD4E5" font-size="18">Disc/Album.iso</text>
+    <rect x="48" y="326" width="336" height="44" rx="8" fill="#242D41"/>
+    <path d="M66 339 h10 l4 4 v14 h-14 z m10 0 v5 h4" fill="none" stroke="#9BA6C0" stroke-width="1.5" stroke-linejoin="round"/>
+    <text x="92" y="354" fill="#CDD4E5" font-size="18">Album copy/Track.flac</text>
+    <text x="48" y="407" fill="#AAB4CA" font-size="17">Mixed names · Missing tags &amp; artwork</text>
+    <path d="M456 158 V354" stroke="#45415F" stroke-width="2"/>
+    <circle cx="456" cy="146" r="15" fill="#30294E" stroke="#7261AD"/>
+    <text x="456" y="151" text-anchor="middle" fill="#D8CEFF" font-size="14" font-weight="700">1</text>
+    <text x="484" y="153" fill="#E3E0F1" font-size="21">Scan &amp; identify</text>
+    <circle cx="456" cy="201" r="15" fill="#30294E" stroke="#7261AD"/>
+    <text x="456" y="206" text-anchor="middle" fill="#D8CEFF" font-size="14" font-weight="700">2</text>
+    <text x="484" y="208" fill="#E3E0F1" font-size="21">Unlock supported files</text>
+    <circle cx="456" cy="256" r="15" fill="#30294E" stroke="#7261AD"/>
+    <text x="456" y="261" text-anchor="middle" fill="#D8CEFF" font-size="14" font-weight="700">3</text>
+    <text x="484" y="263" fill="#E3E0F1" font-size="21">Convert &amp; deduplicate</text>
+    <circle cx="456" cy="311" r="15" fill="#30294E" stroke="#7261AD"/>
+    <text x="456" y="316" text-anchor="middle" fill="#D8CEFF" font-size="14" font-weight="700">4</text>
+    <text x="484" y="318" fill="#E3E0F1" font-size="21">Match tags &amp; artwork</text>
+    <circle cx="456" cy="366" r="15" fill="#30294E" stroke="#7261AD"/>
+    <text x="456" y="371" text-anchor="middle" fill="#D8CEFF" font-size="14" font-weight="700">5</text>
+    <text x="484" y="373" fill="#E3E0F1" font-size="21">Name &amp; organize</text>
+    <path d="M412 228 h16 m-6 -5 6 5 -6 5 M777 228 h16 m-6 -5 6 5 -6 5" fill="none" stroke="#8C7ED0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="824" y="118" width="408" height="232" rx="12" fill="#252E43"/>
+    <rect x="846" y="142" width="96" height="96" rx="10" fill="url(#art)"/>
+    <circle cx="894" cy="190" r="31" fill="none" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="1.5"/>
+    <circle cx="894" cy="190" r="15" fill="none" stroke="#FFFFFF" stroke-opacity="0.7" stroke-width="1.5"/>
+    <circle cx="894" cy="190" r="3" fill="#F5F0FF"/>
+    <text x="964" y="164" fill="#F1F3FA" font-size="23" font-weight="600">Artist /</text>
+    <text x="964" y="195" fill="#D9D5EC" font-size="21">2024 - Album /</text>
+    <text x="964" y="226" fill="#B6C2D9" font-size="18">01 - Song.flac</text>
+    <text x="964" y="255" fill="#B6C2D9" font-size="18">02 - Song.flac</text>
+    <rect x="846" y="283" width="364" height="42" rx="9" fill="#213F3D"/>
+    <path d="m861 304 5 5 10 -11" fill="none" stroke="#8BDCC8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="888" y="310" fill="#AFE8D9" font-size="20">Tags + embedded album cover</text>
+    <text x="824" y="384" fill="#E2DCF8" font-size="24" font-weight="600">FLAC · MP3 · AAC</text>
+    <text x="824" y="412" fill="#AAB6CD" font-size="18">Source files retained · Verified output</text>
+  </g>
+</svg>
