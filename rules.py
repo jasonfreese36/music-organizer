@@ -8,7 +8,7 @@ FIELDS = {"format","bitrate","sample_rate","bits","channels","size_mb","lossless
 NUMERIC = {"gt","ge","lt","le","eq"}
 ACTION_VALUES = {
     "format":{"inherit","flac","mp3","aac"},
-    "resample_mode":{"inherit","preserve","limit","fixed"},
+    "resample_mode":{"inherit","preserve","limit","fixed","family"},
     "channels":{"inherit","preserve","stereo","mono"},
     "mp3_mode":{"inherit","vbr","cbr"},
 }

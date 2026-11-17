@@ -23,7 +23,7 @@ from platform_audio import KeyStore,decrypt_platform
 from platform_formats import ARCHIVE_NAMES
 from model import (ALBUMS, ARCHIVES, PLAYLISTS, RECORDS, REVIEW, Cancelled, Journal,
                    at, bytes_hash, component, count_tag, match_name, normalize, number,
-                   reparse, short_hash, stage, validated_roots, write_atomic, csv_bytes, year)
+                   reparse, short_hash, source_label, stage, validated_sources, write_atomic, csv_bytes, year)
 
 
 @contextlib.contextmanager
@@ -72,8 +72,13 @@ def track_key(tags):
 class Organizer:
     def __init__(self, source, dest, items, settings, tools, cancel, emit=lambda *a: None,
                  overrides=None, cover_overrides=None, cache_folder=None, selections=None):
-        self.source, self.dest = validated_roots(source, dest)
-        self.records_root,self.archive_root=export_locations(self.source,self.dest,settings)
+        items=tuple(items)
+        self.sources, self.dest = validated_sources(source, dest)
+        self.source = self.sources[0]  # Legacy report field for single-root consumers.
+        self.records_root,self.archive_root=export_locations(self.sources,self.dest,settings)
+        for item in items:
+            if item.source_root not in self.sources or not item.path.resolve().is_relative_to(item.source_root):
+                raise ValueError(tr('扫描结果与当前源文件夹不一致，请重新扫描'))
         self.items, self.settings, self.tools, self.cancel, self.emit = items, settings, tools, cancel, emit
         self.overrides, self.cover_overrides = overrides or {}, cover_overrides or {}
         self.selections = selections or {}
@@ -108,9 +113,30 @@ class Organizer:
         item.check()
         key=(item.path,item.size,item.mtime,category)
         if key in self.archived:return self.archived[key]
-        prefix=Path() if self.settings.output_profile=="library" else Path(component(self.source.name,65)+" ["+short_hash(str(self.source).casefold())+"]")
-        target = at(self.archive_root, prefix / ARCHIVES / category / item.rel)
+        prefix=Path(source_label(item.source_root)) if len(self.sources)>1 else Path() if self.settings.output_profile=="library" else Path(component(self.source.name,65)+" ["+short_hash(str(self.source).casefold())+"]")
+        rel=Path(ARCHIVES)/category/prefix/item.rel if self.settings.output_profile=="library" else prefix/ARCHIVES/category/item.rel
+        target = at(self.archive_root, rel)
         original_hash = None
+        if len(self.sources)>1:
+            # Reuse byte-identical archives when a single-source library gains
+            # more roots, and across same-name files from different roots.
+            candidates=[at(self.archive_root,Path(ARCHIVES)/category/item.rel)] if self.settings.output_profile=="library" else []
+            for root in self.sources:
+                label=Path(source_label(root))
+                candidate=(Path(ARCHIVES)/category/label/item.rel if self.settings.output_profile=="library"
+                           else label/ARCHIVES/category/item.rel)
+                candidates.append(at(self.archive_root,candidate))
+                if self.settings.output_profile!="library":
+                    old_label=component(root.name,65)+" ["+short_hash(str(root).casefold())+"]"
+                    candidates.append(at(self.archive_root,Path(old_label)/ARCHIVES/category/item.rel))
+            for candidate in dict.fromkeys(candidates):
+                if candidate.is_file() and candidate.stat().st_size==item.size:
+                    original_hash=original_hash or bytes_hash(item.path,self.cancel)
+                    if bytes_hash(candidate,self.cancel)==original_hash:
+                        item.check()
+                        self.archived[key]=candidate
+                        self.journal.put("archive_reused",item.library_rel,target=str(candidate),sha256=original_hash,source_root=str(item.source_root))
+                        return candidate
         if target.exists():
             original_hash = bytes_hash(item.path, self.cancel)
             if target.is_file() and target.stat().st_size == item.size and bytes_hash(target, self.cancel) == original_hash:
@@ -132,9 +158,9 @@ class Organizer:
                 raise ValueError(tr('备份副本校验失败'))
             item.check()
             commit(temp, target)
-        self.journal.put("archive", item.rel, target=str(target), sha256=original_hash)
+        self.journal.put("archive", item.library_rel, target=str(target), sha256=original_hash,source_root=str(item.source_root))
         self.archived[key]=target
-        self.emit("log", tr('保留原盘 · {0}').format(item.rel))
+        self.emit("log", tr('保留原盘 · {0}').format(item.library_rel))
         return target
 
     def load_index(self):
@@ -191,14 +217,14 @@ class Organizer:
             if item.kind != "cue":
                 continue
             self.cancel.check()
-            folder = self.scratch / ("cue-" + short_hash(item.rel))
+            folder = self.scratch / ("cue-" + short_hash(item.path))
             folder.mkdir()
             try:
-                members, images = split_cue(item, self.source, folder, mapping, self.tools, self.cancel, self.emit)
+                members, images = split_cue(item, item.source_root, folder, mapping, self.tools, self.cancel, self.emit)
                 if any(image.path in covered for image in images):
                     # Multiple text encodings of the same CUE should not duplicate an album.
                     self.archive(item, "Cue Images")
-                    self.emit("log", tr('相同整轨的附加 CUE 已保留 · {0}').format(item.rel))
+                    self.emit("log", tr('相同整轨的附加 CUE 已保留 · {0}').format(item.library_rel))
                     continue
                 for image in [item, *images]:
                     self.archive(image, "Cue Images")
@@ -207,13 +233,13 @@ class Organizer:
             except Cancelled:
                 raise
             except Exception as exc:
-                self.error(item.rel, exc, tr('CUE 分轨'))
+                self.error(item.library_rel, exc, tr('CUE 分轨'))
                 try:
                     self.archive(item, "Cue Images")
                 except Cancelled:
                     raise
                 except Exception as archive_exc:
-                    self.error(item.rel, archive_exc, tr('CUE 备份'))
+                    self.error(item.library_rel, archive_exc, tr('CUE 备份'))
         encrypted=[i for i in self.items if i.kind in {"ncm","encrypted"}]
         for issue in self.keys.issues:self.emit("log",tr('密钥文件：')+issue)
         def unwrap(index,item):
@@ -222,10 +248,10 @@ class Organizer:
             info=item.crypto
             category="NCM Originals" if item.kind=="ncm" else "Platform Originals/"+ARCHIVE_NAMES.get(info.get("platform"),"Other")
             self.archive(item,category)
-            if not self.settings.decrypt_enabled:return [],dict(source=str(item.rel),platform=info.get("platform",""),name=info.get("name",tr('平台音频')),version=info.get("version",""),state="disabled",detail=tr('平台解密未启用；源文件保留'))
-            self.emit("log",tr('平台音频 · {0} · {1}').format(info.get('name', ''), item.rel))
+            if not self.settings.decrypt_enabled:return [],dict(source=str(item.library_rel),platform=info.get("platform",""),name=info.get("name",tr('平台音频')),version=info.get("version",""),state="disabled",detail=tr('平台解密未启用；源文件保留'))
+            self.emit("log",tr('平台音频 · {0} · {1}').format(info.get('name', ''), item.library_rel))
             members,result=decrypt_platform(item,folder,self.tools,self.settings,self.cancel,self.keys)
-            return members,dict(source=str(item.rel),**result)
+            return members,dict(source=str(item.library_rel),**result)
         with ThreadPoolExecutor(max_workers=min(self.settings.workers,self.settings.decrypt_workers),thread_name_prefix="platform") as pool:
             pending=[pool.submit(unwrap,index,item) for index,item in enumerate(encrypted)]
             for index,(item,future) in enumerate(zip(encrypted,pending),1):
@@ -235,8 +261,8 @@ class Organizer:
                     for job in pending:job.cancel()
                     raise
                 except Exception as exc:
-                    self.error(item.rel,exc,tr('平台音频'))
-                    result=dict(source=str(item.rel),platform=item.crypto.get("platform",""),name=item.crypto.get("name",tr('平台音频')),version=item.crypto.get("version",""),state=getattr(exc,"code","invalid_data"),detail=str(exc)[:300])
+                    self.error(item.library_rel,exc,tr('平台音频'))
+                    result=dict(source=str(item.library_rel),platform=item.crypto.get("platform",""),name=item.crypto.get("name",tr('平台音频')),version=item.crypto.get("version",""),state=getattr(exc,"code","invalid_data"),detail=str(exc)[:300])
                 self.platform_events.append(result);self.emit("platform",result)
                 self.emit("progress",(tr('平台音频还原'),index,len(encrypted)))
                 covered.add(item.path)
@@ -244,7 +270,7 @@ class Organizer:
         for index, item in enumerate(special, 1):
             self.cancel.check()
             self.emit("progress", (tr('解密 / 原盘处理'), index-1, len(special)))
-            folder = self.scratch / (item.kind + "-" + short_hash(item.rel))
+            folder = self.scratch / (item.kind + "-" + short_hash(item.path))
             folder.mkdir()
             category = "DSD Originals"
             try:
@@ -258,7 +284,7 @@ class Organizer:
             except Cancelled:
                 raise
             except Exception as exc:
-                self.error(item.rel, exc, tr('解密 / 原盘处理'))
+                self.error(item.library_rel, exc, tr('解密 / 原盘处理'))
             covered.add(item.path)
         for item in self.items:
             self.cancel.check()
@@ -268,7 +294,7 @@ class Organizer:
                     elif item.profile.codec.startswith("pcm_f") or item.profile.bits > 32:self.archive(item, "PCM Originals")
                     tracks.append(infer_track(item))
                 else:
-                    self.error(item.rel, item.error or tr('无有效音频'), tr('音频读取'))
+                    self.error(item.library_rel, item.error or tr('无有效音频'), tr('音频读取'))
         for track in tracks:
             edits = self.overrides.get(track.edit_key, {})
             track.tags.update({k: v for k, v in edits.items() if v})
@@ -290,9 +316,10 @@ class Organizer:
 
     def same(self, track, entry):
         record = entry.get("record", {})
-        transformed = track.profile.codec.startswith("dsd") or not track.profile.lossless and track.profile.codec not in {"mp3", "aac"}
+        plan=plan_audio(track,self.settings)
+        transformed = not plan.pcm_unchanged or plan.mode=="encode" and (not track.profile.lossless or plan.codec not in ("flac","alac"))
         for origin in record.get("origins", []):
-            if (origin.get("root") == os.path.normcase(str(self.source)) and origin.get("id") == track.origin_id and origin.get("source_sha256")):
+            if (origin.get("root") == os.path.normcase(str(track.source.source_root)) and origin.get("id") == track.origin_id and origin.get("source_sha256")):
                 if self.source_hash(track)==origin["source_sha256"] and payload_hash(entry["path"],self.cancel)==record.get("audio_sha256"):
                     return True
         profile = entry["profile"]
@@ -300,7 +327,7 @@ class Organizer:
             plan=plan_audio(track,self.settings)
             if profile.channels != plan.channels or profile.rate != plan.rate or profile.codec!=plan.codec or abs(profile.seconds-track.profile.seconds) > .18:
                 return False
-            key = track.origin_id
+            key = str(track.source.source_root)+"|"+track.origin_id
             if key not in self.comparisons:
                 comparison = self.scratch / ("compare-"+short_hash(key)+plan.ext)
                 render(track, comparison, None, self.tools, self.settings, self.cancel)
@@ -361,7 +388,7 @@ class Organizer:
             for index, track in enumerate(tracks):
                 overlaps = self.equivalent_entries(track, entries)
                 if not overlaps:
-                    origins = self.origins.get((os.path.normcase(str(self.source)), track.origin_id), [])
+                    origins = self.origins.get((os.path.normcase(str(track.source.source_root)), track.origin_id), [])
                     equal_origin = next((entry for entry in origins if normalize(entry["variant"]) == normalize(track.variant) and self.same(track, entry)), None)
                     if equal_origin:
                         matches[index] = equal_origin
@@ -386,16 +413,16 @@ class Organizer:
 
     def row(self, track, target, status, sha="", cover=None,folder=None):
         plan=plan_audio(track,self.settings)
-        result = dict(source=str(track.source.rel), target=str(target.relative_to(self.dest)), status=status,
+        result = dict(source=str(track.source.library_rel), target=str(target.relative_to(self.dest)), status=status,
                       title=track.tags.get("title", ""), artist=track.tags.get("artist", ""),
                       album=track.tags.get("album", ""), variant=track.variant,
                       metadata_source=track.metadata_source, cover_source=cover.source if cover else "",
                       issues="；".join(dict.fromkeys(track.issues)), audio_sha256=sha,rule=plan.rule,conversion=plan.description)
         self.rows.append(result)
-        self.journal.put(status, track.source.rel, **{k: v for k, v in result.items() if k != "source"})
+        self.journal.put(status, track.source.library_rel, **{k: v for k, v in result.items() if k != "source"})
         prior = self.index.get(result["target"], {})
         origins = list(prior.get("origins", []))
-        origin = dict(root=os.path.normcase(str(self.source)), id=track.origin_id, source_sha256=self.source_hash(track))
+        origin = dict(root=os.path.normcase(str(track.source.source_root)), id=track.origin_id, source_sha256=self.source_hash(track))
         origins = [o for o in origins if (o.get("root"), o.get("id")) != (origin["root"], origin["id"])] + [origin]
         record = dict(tags=track.tags, variant=track.variant, audio_sha256=sha or prior.get("audio_sha256", ""),
                       origins=origins, transform=self.transform(track),folder=str((folder or target.parent).relative_to(self.dest)))
@@ -499,7 +526,7 @@ class Organizer:
                 except Cancelled:
                     raise
                 except Exception as exc:
-                    self.error(track.source.rel, exc, tr('更新已有音轨'))
+                    self.error(track.source.library_rel, exc, tr('更新已有音轨'))
                 continue
             key = track_key(track.tags)
             prior = used.get(key)
@@ -529,16 +556,16 @@ class Organizer:
                     pending.cancel()
                 raise
             except Exception as exc:
-                self.error(track.source.rel, exc, tr('写入音轨'))
+                self.error(track.source.library_rel, exc, tr('写入音轨'))
         for track, target in duplicates:
             if target in successful:
                 self.row(track, target, "duplicate", cover=cover,folder=folder)
             else:
-                self.error(track.source.rel, tr('重复源对应的输出未成功，重跑后可恢复'), tr('重复音轨'))
+                self.error(track.source.library_rel, tr('重复源对应的输出未成功，重跑后可恢复'), tr('重复音轨'))
 
     def reports(self):
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
-        summary = dict(status=self.status, source=str(self.source), target=str(self.dest),
+        summary = dict(status=self.status, source=str(self.source), sources=[str(p) for p in self.sources], target=str(self.dest),
                        records_root=str(self.records_root),archive_root=str(self.archive_root) if self.archive_root else "",output_profile=self.settings.output_profile,
                        elapsed_seconds=round(time.monotonic()-self.started, 2),
                        written=sum(r["status"] == "written" for r in self.rows),
@@ -573,7 +600,7 @@ class Organizer:
         try:
             with library_lock(self.records_root):
                 self.journal = Journal(self.records_root)
-                self.journal.put("run_started", self.source, settings=asdict(self.settings))
+                self.journal.put("run_started", self.source, sources=[str(p) for p in self.sources],settings=asdict(self.settings))
                 try:
                     self.tools.verify(self.cancel)
                     preflight_destination(self.dest,self.settings,self.tools,self.cancel)
@@ -619,7 +646,7 @@ class Organizer:
                                 except Cancelled:
                                     raise
                                 except Exception as exc:
-                                    self.error(item.rel, exc, tr('附页备份'))
+                                    self.error(item.library_rel, exc, tr('附页备份'))
                 except Cancelled:
                     self.status = "cancelled"
                     self.emit("log", tr('任务已停止，已完成的音轨保留，重新运行可接着整理'))

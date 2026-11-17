@@ -164,10 +164,12 @@ def extract_sacd(item, scratch, tools, settings, cancel, emit):
         folder.mkdir()
         try:
             emit("log", tr('读取 SACD {0} · {1}').format(area, item.rel.name))
+            dsd_path=settings.dsd_advanced or settings.sacd_rate not in (88200,176400,352800)
+            output_args=["-s","-c"] if dsd_path else ["-f","--flac-rate",str(settings.sacd_rate)]
             tools.run([tools.sacd, "-i", item.path, "-2" if area == "stereo" else "-m",
-                       "-f", "-C", "-b", "--flac-rate", str(settings.sacd_rate),
+                       *output_args, "-C", "-b",
                        "--max-read-errors", "0", "-y", folder], cancel, cwd=folder)
-            files = sorted(folder.rglob("*.flac"))
+            files = sorted(folder.rglob("*.dsf" if dsd_path else "*.flac"))
             if not files:
                 raise ValueError(tr('此 SACD 区域没有可提取音轨'))
             common, parts = {}, []
@@ -208,7 +210,7 @@ def extract_sacd(item, scratch, tools, settings, cancel, emit):
                         xml_tags[int(member.get("id"))] = {k: v for k, v in values.items() if v}
             for index, path in enumerate(files, 1):
                 profile, tags, cover = read_audio(path, tools, cancel)
-                if profile.seconds <= 0 or profile.codec != "flac":
+                if profile.seconds <= 0 or (not profile.codec.startswith("dsd") if dsd_path else profile.codec!="flac"):
                     raise ValueError(tr('SACD 提取产生无效音轨'))
                 cue_part = next((p for p in parts if Path(p.file).name.casefold() == path.name.casefold()), None)
                 if cue_part:

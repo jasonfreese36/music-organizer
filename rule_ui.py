@@ -148,7 +148,7 @@ class RuleManager(ctk.CTkFrame):
         self.action_vars={}
         actions=rule["actions"]
         fields=[(tr('输出格式'),"format",{tr('沿用默认'):"inherit","FLAC":"flac","MP3":"mp3","AAC (.m4a)":"aac"}),
-                (tr('采样率策略'),"resample_mode",{tr('沿用默认'):"inherit",tr('保留原采样率'):"preserve",tr('仅降到上限'):"limit",tr('统一采样率'):"fixed"}),
+                (tr('采样率策略'),"resample_mode",{tr('沿用默认'):"inherit",tr('保留原采样率'):"preserve",tr('仅降到上限'):"limit",tr('按 44.1 / 48 kHz 家族降低'):"family",tr('统一采样率'):"fixed"}),
                 (tr('采样率 / 上限 (Hz)'),"sample_rate",{tr('沿用默认'):"inherit",**RATES}),
                 (tr('FLAC 位深'),"pcm_bits",{tr('沿用默认'):"inherit",tr('保留原位深'):0,"16 bit":16,"24 bit":24,"32 bit":32}),
                 (tr('声道'),"channels",{tr('沿用默认'):"inherit",tr('保留原声道'):"preserve",tr('立体声'):"stereo",tr('单声道'):"mono"}),

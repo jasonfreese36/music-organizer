@@ -6,7 +6,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from model import Cover,component,reparse,validated_roots
+from model import Cover,component,reparse,source_roots,validated_roots
 
 
 @dataclass(frozen=True)
@@ -63,15 +63,15 @@ def source_can_copy(profile,path,settings):
 def device_parameters(profile,settings,codec,base_rate):
     policy=device_policy(settings)
     rate=base_rate
-    if settings.resample_mode=="fixed":rate=settings.sample_rate
-    elif settings.resample_mode=="limit":rate=min(rate,settings.sample_rate)
+    from audio_dsp import target_rate
+    rate=target_rate(rate,settings)
     allowed=(44100,) if codec=="alac" and settings.output_profile=="ipod" else policy.rates
     if rate not in allowed:
         rate=44100 if 44100 in allowed and profile.rate%44100==0 else max(allowed)
     channels=min(2,max(1,profile.channels)) if settings.channels=="preserve" else 1 if settings.channels=="mono" else 2
     bits=0
     if codec=="alac":
-        requested=settings.pcm_bits or (profile.bits if profile.bits in (16,24,32) else policy.max_bits)
+        requested=settings.dsd_pcm_bits if profile.codec.startswith("dsd") and settings.dsd_advanced else settings.pcm_bits or (profile.bits if profile.bits in (16,24,32) else policy.max_bits)
         bits=16 if min(requested,policy.max_bits)<=16 else 24
     return rate,channels,bits
 
@@ -88,12 +88,13 @@ def export_locations(source,dest,settings):
         if any(p.exists() and reparse(p) for p in (raw,*raw.parents)):raise ValueError(tr('设备导出路径不能经过链接或重解析点'))
         archive=raw.resolve()
         if archive==archive.parent:raise ValueError(tr('原盘归档不能使用磁盘根目录'))
-    locations=[source,dest,records]+([archive] if archive else [])
+    roots=source_roots(source)
+    locations=[*roots,dest,records]+([archive] if archive else [])
     for i,left in enumerate(locations):
         for right in locations[i+1:]:
             if left.is_relative_to(right) or right.is_relative_to(left):
                 raise ValueError(tr('源目录、设备导入目录、报告目录与原盘归档目录必须彼此独立'))
-    for folder in locations[1:]:
+    for folder in locations[len(roots):]:
         if folder.exists() and not folder.is_dir():raise ValueError(tr('设备导出相关路径必须是目录'))
         if any(p.exists() and reparse(p) for p in (folder,*folder.parents)):raise ValueError(tr('设备导出路径不能经过链接或重解析点'))
     return records,archive

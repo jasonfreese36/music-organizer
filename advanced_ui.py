@@ -61,24 +61,38 @@ def section(master,title,description=None):
     return frame
 
 
+class AdvancedTabs(ctk.CTkTabview):
+    def set(self,name):
+        # CTkTabview 5.2.2 schedules hiding other tabs after 100 ms, capturing
+        # the old name. Rapid programmatic navigation can then hide the new tab.
+        if name not in self._tab_dict:
+            return super().set(name)
+        self._grid_forget_all_tabs(exclude_name=name)
+        self._current_name=name
+        self._segmented_button.set(name)
+        self._set_grid_current_tab()
+
+
 class AdvancedPanel(ctk.CTkFrame):
     def __init__(self,master,app,help_text):
         super().__init__(master,fg_color="transparent")
         self.app=app
         self._preview_job=None
-        self.tabs=ctk.CTkTabview(self,fg_color="transparent",corner_radius=12,
+        self.tabs=AdvancedTabs(self,fg_color="transparent",corner_radius=12,
                                segmented_button_fg_color=color("#F2F0FA"),segmented_button_selected_color=TINT,
                                segmented_button_selected_hover_color=color("#E2DAF6"),segmented_button_unselected_color=color("#F8F7FC"),
                                segmented_button_unselected_hover_color=color("#E8E3F7"),text_color=INK,segmented_button_font=(FONT,13))
         self.tabs.pack(fill="both",expand=True)
         self.scrollers={}
-        for name in (tr('外观'),tr('苹果设备'),tr('目录与命名'),tr('音频转换'),tr('条件规则'),tr('平台音频'),tr('配置与工具')):
+        for name in (tr('外观'),tr('苹果设备'),tr('目录与命名'),tr('音频转换'),tr('音频精调'),tr('条件规则'),tr('平台音频'),tr('配置与工具')):
             tab=self.tabs.add(name)
             if name==tr('条件规则'):continue
             scroll=ctk.CTkScrollableFrame(tab,fg_color="transparent",corner_radius=0)
             scroll.pack(fill="both",expand=True)
             self.scrollers[name]=scroll
         self.build_appearance();self.build_naming();self.build_audio();self.build_tools(help_text)
+        from dsp_ui import DSPPanel
+        self.dsp_panel=DSPPanel(self.scrollers[tr('音频精调')],self)
         from apple_ui import ApplePanel
         self.apple_panel=ApplePanel(self.scrollers[tr('苹果设备')],self)
         from rule_ui import RuleManager
@@ -128,6 +142,17 @@ class AdvancedPanel(ctk.CTkFrame):
         widget=ctk.CTkCheckBox(pane,text=title,variable=self.app.advanced_values[key],fg_color=ACCENT,hover_color=HOVER,
                               text_color=INK,checkbox_width=18,checkbox_height=18,font=(FONT,12),border_color=LINE)
         widget.pack(anchor="w",padx=22,pady=(0,16));self.app.setting_widgets.append(widget)
+        return widget
+
+    def number(self,pane,title,key,description=None):
+        row=ctk.CTkFrame(pane,fg_color="transparent");row.pack(fill="x",padx=22,pady=(0,14))
+        text=ctk.CTkFrame(row,fg_color="transparent");text.pack(side="left",fill="x",expand=True,padx=(0,20))
+        label(text,title,size=13).pack(anchor="w")
+        if description:label(text,description,size=11,color=MUTED,wraplength=590,justify="left").pack(anchor="w",pady=(3,0))
+        widget=ctk.CTkEntry(row,textvariable=self.app.advanced_values[key],width=220,height=35,
+                           text_color=INK,fg_color=color("#F7F6FB"),border_color=LINE)
+        widget.pack(side="right");self.app.setting_widgets.append(widget)
+        return widget
 
     def build_naming(self):
         host=self.scrollers[tr('目录与命名')]
@@ -211,7 +236,7 @@ class AdvancedPanel(ctk.CTkFrame):
         self.setting(pane,tr('有损来源的输出'),"lossy_format",{tr('保留 MP3/AAC，其余转 AAC'):"preserve",tr('全部转 MP3'):"mp3",tr('全部转 AAC'):"aac"})
         self.check(pane,tr('目标编码相同时，也重新编码 MP3 / AAC'),"reencode_lossy")
         pane=section(host,tr('采样率、位深与声道'),tr('DSD 先按 DSD → PCM 采样率生成播放版。保留现有有损编码时，这里的采样率和声道设置不触发重新编码。'))
-        self.setting(pane,tr('PCM 采样率策略'),"resample_mode",{tr('保留原采样率'):"preserve",tr('仅降低高于上限的采样率'):"limit",tr('统一到指定采样率'):"fixed"})
+        self.setting(pane,tr('PCM 采样率策略'),"resample_mode",{tr('保留原采样率'):"preserve",tr('仅降低高于上限的采样率'):"limit",tr('按 44.1 / 48 kHz 家族降低'):"family",tr('统一到指定采样率'):"fixed"})
         self.setting(pane,tr('指定采样率 / 上限 (Hz)'),"sample_rate",RATES)
         self.setting(pane,tr('FLAC 位深'),"pcm_bits",{tr('保留原位深，DSD 默认 24 bit'):0,"16 bit":16,"24 bit":24,"32 bit":32})
         self.setting(pane,tr('声道'),"channels",{tr('保留原声道'):"preserve",tr('立体声'):"stereo",tr('单声道'):"mono"},tr('MP3 最多支持立体声，多声道来源会自动混缩并在预览中说明。'))
@@ -228,9 +253,9 @@ class AdvancedPanel(ctk.CTkFrame):
         w=Choice(row,self.app.bitrate,{str(n):n for n in (96,128,160,192,224,256,320,384,448,512)},width=220)
         w.pack(side="right");self.app.setting_widgets.append(w)
         self.setting(pane,tr('MP3 ID3 标签版本'),"id3_version",{tr('保留原版本'):"preserve",tr('ID3v2.3（兼容旧播放器）'):"3","ID3v2.4":"4"})
-        pane=section(host,tr('DSD / SACD 与校验'),tr('DSD 和 SACD 原盘始终保留在 Disc Archives，原始音乐目录始终保留。'))
+        pane=section(host,tr('DSD / SACD 与校验'),tr('常规曲库保留 DSD 原盘；设备输出遵循原盘归档选项。更多 DSD 参数在“音频精调”中按需启用。'))
         for title,var,choices in ((tr('SACD 区域'),self.app.area,{tr('双声道'):"stereo",tr('多声道'):"multi",tr('两个区域'):"both"}),
-                                  ("DSD → PCM (Hz)",self.app.rate,{"88200":88200,"176400":176400})):
+                                  ("DSD → PCM (Hz)",self.app.rate,{str(n):n for n in (44100,48000,88200,96000,176400,192000,352800,384000)})):
             row=ctk.CTkFrame(pane,fg_color="transparent");row.pack(fill="x",padx=22,pady=(0,16))
             label(row,title,size=13).pack(side="left")
             w=Choice(row,var,choices,width=220);w.pack(side="right");self.app.setting_widgets.append(w)
@@ -240,6 +265,8 @@ class AdvancedPanel(ctk.CTkFrame):
     def audio_preset(self,key):
         defaults=Settings()
         fields=("lossless_format","lossy_format","reencode_lossy","recompress_flac","resample_mode","sample_rate","pcm_bits","channels","resampler","dither","flac_compression","mp3_mode","mp3_kbps","mp3_vbr")
+        from audio_dsp import DSP_FIELDS
+        fields+=DSP_FIELDS
         for name in fields:self.app.advanced_values[name].set(getattr(defaults,name))
         self.app.bitrate.set(256)
         if key in ("mp3","aac"):

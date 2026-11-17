@@ -31,6 +31,10 @@ jobs:
         run: python test_e2e.py --root test-output/e2e
       - name: Test advanced settings
         run: python test_advanced.py --root test-output/advanced
+      - name: Test multiple source folders
+        run: python test_multisource.py --root test-output/multisource
+      - name: Measure resampling and DSD processing
+        run: python test_audio_dsp.py --root test-output/audio-dsp
       - name: Test platform formats and key import
         run: python test_platforms.py --root test-output/platforms
       - name: Test Apple exports and separate archives

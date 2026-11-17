@@ -8,7 +8,8 @@ from media import read_audio
 from platform_formats import detect_platform,original_stem
 from platform_audio import KeyStore,probe_platform
 from model import (Cancelled, DISC_FOLDER, EDITION, IMAGE_EXTS, Item, LP, SIDECARS,
-                   SUPPORTED, TRACK_PREFIX, Track, clean_text, count_tag, number, reparse)
+                   SUPPORTED, TRACK_PREFIX, Track, clean_text, count_tag, number, reparse,
+                   source_roots, source_label)
 
 
 GENERIC = {"music", "albums", "album", "singles", "single", "flac", "mp3", "aac", "wav", "lossless",
@@ -16,29 +17,33 @@ GENERIC = {"music", "albums", "album", "singles", "single", "flac", "mp3", "aac"
 
 
 def scan(root, tools, cancel, workers=4, emit=lambda *a: None,settings=None):
+    roots = source_roots(root)
+    namespaces = {r:source_label(r) if len(roots)>1 else "" for r in roots}
     paths, skipped = [], []
-    stack = [root]
+    stack = [(r,r) for r in reversed(roots)]
     while stack:
         cancel.check()
-        folder = stack.pop()
+        folder, root = stack.pop()
+        display = lambda p: str(Path(namespaces[root])/p.relative_to(root))
         try:
             with os.scandir(folder) as entries:
                 for entry in entries:
                     path = Path(entry.path)
                     if reparse(path):
-                        skipped.append((str(path.relative_to(root)), tr('跳过链接或重解析点')))
+                        skipped.append((display(path), tr('跳过链接或重解析点')))
                     elif entry.is_dir(follow_symlinks=False):
-                        stack.append(path)
+                        stack.append((path,root))
                     elif entry.is_file(follow_symlinks=False):
-                        paths.append(path)
+                        paths.append((path,root))
         except OSError as exc:
-            skipped.append((str(folder.relative_to(root)), str(exc)))
-    paths.sort(key=lambda p: str(p).casefold())
+            skipped.append((display(folder), str(exc)))
+    order = {r:i for i,r in enumerate(roots)}
+    paths.sort(key=lambda pair: (order[pair[1]], str(pair[0]).casefold()))
     emit("log", tr('发现 {0} 个文件，正在读取音频信息').format(len(paths)))
     keys=KeyStore(settings.platform_key_file if settings else "")
     for issue in keys.issues:emit("log",tr('密钥文件：')+issue)
 
-    def inspect(path):
+    def inspect(path,root):
         cancel.check()
         ext = path.suffix.casefold()
         st = path.stat()
@@ -55,13 +60,13 @@ def scan(root, tools, cancel, workers=4, emit=lambda *a: None,settings=None):
             except Exception as exc:
                 error = str(exc)
         item = Item(path, path.relative_to(root), st.st_size, st.st_mtime_ns,
-                    kind, profile, tags, cover, error,crypto=crypto)
+                    kind, profile, tags, cover, error,crypto=crypto,root=root,namespace=namespaces[root])
         item.check()
         return item
 
     items = []
     with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="scan") as pool:
-        futures = {pool.submit(inspect, path): path for path in paths}
+        futures = {pool.submit(inspect, path,root): (path,root) for path,root in paths}
         try:
             for future in as_completed(futures):
                 cancel.check()
@@ -70,14 +75,15 @@ def scan(root, tools, cancel, workers=4, emit=lambda *a: None,settings=None):
                 except Cancelled:
                     raise
                 except Exception as exc:
-                    skipped.append((str(futures[future].relative_to(root)), str(exc)))
+                    path,root=futures[future]
+                    skipped.append((str(Path(namespaces[root])/path.relative_to(root)), str(exc)))
                 if len(items) % 50 == 0 or len(items) + len(skipped) >= len(paths):
                     emit("progress", (tr('读取文件'), len(items), len(paths)))
         except BaseException:
             for future in futures:
                 future.cancel()
             raise
-    items.sort(key=lambda i: str(i.rel).casefold())
+    items.sort(key=lambda i: (order[i.source_root],str(i.rel).casefold()))
     emit("inventory", items)
     return items, skipped
 

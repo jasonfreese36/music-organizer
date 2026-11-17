@@ -44,6 +44,8 @@ Source files stay in place. The organized library is written to a separate desti
 
 ## Fast conversion, less repeated work
 
+**New in v1.5:** combine multiple source folders into one library with **Manage sources**, including cross-source deduplication and durable source records. **Advanced → Audio tuning** adds resampling filters, adjustable cutoff and DSD-to-PCM controls. [Audio tuning guide](docs/AUDIO_TUNING.md)
+
 - **Parallel processing:** configurable audio tasks and a separate decoding concurrency setting help use your CPU and storage effectively.
 - **Less re-encoding:** existing FLAC, MP3 and AAC can retain their audio payload when the selected settings allow it. A CUE image is decoded once before splitting.
 - **Cached lookups:** release and artwork queries are grouped by album and cached, reducing repeated requests.
@@ -54,7 +56,7 @@ The release EXE uses **GCC `-O3` + LTO** through Nuitka. Actual throughput depen
 ## Get started
 
 1. **Download and open** [MusicOrganizer.exe](https://github.com/jasonfreese36/music-organizer/releases/latest/download/MusicOrganizer.exe). The first launch extracts bundled components.
-2. **Choose your folders.** Select a music source and a separate destination, then click **Read-only scan**.
+2. **Choose your folders.** Select a music source and a separate destination, then click **Read-only scan**. Use **Manage sources** to add folders from other drives.
 3. **Review the plan.** Inspect tracks, tags and covers. Use **Find tags and artwork** to compare releases or choose a local cover. Advanced settings are optional.
 4. **Click Organize.** Review the finished albums and `Needs Review/Review.csv`. Correct uncertain items and rerun to the same destination to update or complete them.
 
@@ -139,6 +141,7 @@ Advanced settings let you tailor the library without writing scripts.
 |---|---|
 | **Folders and filenames** | Artist/album layouts, title-first or track-first names, metadata fields, multidisc folders or prefixes, live path previews |
 | **Audio conversion** | Output codec, sample-rate policy, bit depth, channels, SWResample / SoXR, dithering, FLAC compression, MP3 CBR/VBR and AAC bitrate |
+| **Audio tuning** | SoXR HQ/VHQ/custom precision; SWR Kaiser/Blackman–Nuttall/Cubic; cutoff, filter controls, noise shaping, headroom and advanced DSD PCM filtering |
 | **Conditional rules** | Source codec, bitrate, sample rate, bit depth, channels, size or lossless status; AND/OR conditions; enable, duplicate and reorder |
 | **Profiles and previews** | Import/export settings and export a read-only path/conversion plan as CSV; local paths and media keys are excluded from reusable profiles |
 | **Appearance** | Light, dark or system mode; five accent colors; English or Simplified Chinese |
@@ -222,6 +225,8 @@ See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md), the retained license texts
 
 ## 快速处理，减少重复工作
 
+**v1.5 新增：**通过“**管理来源**”将多个磁盘、多个文件夹合并整理到同一曲库，跨来源校验去重并保留来源记录。“**高级设置 → 音频精调**”新增重采样滤波、可调 cutoff 和 DSD → PCM 参数。[音频精调说明](docs/AUDIO_TUNING.zh-CN.md)
+
 - **并行处理：**可调音频任务数量，并单独设置解密并发，适应 CPU 与磁盘能力。
 - **减少重编码：**设置允许时，已有 FLAC、MP3、AAC 可保留编码音频；CUE 整轨只解码一次再分轨。
 - **缓存在线资料：**按专辑查询标签与封面，缓存检索结果，减少重复请求。
@@ -232,7 +237,7 @@ See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md), the retained license texts
 ## 开始使用
 
 1. **下载并打开** [MusicOrganizer.exe](https://github.com/jasonfreese36/music-organizer/releases/latest/download/MusicOrganizer.exe)。首次启动会解压内置组件。
-2. **选择目录。**选音乐源文件夹和一个独立目标文件夹，点击“**只读扫描**”。
+2. **选择目录。**选音乐源文件夹和一个独立目标文件夹，点击“**只读扫描**”。可在“**管理来源**”中继续添加其他磁盘的文件夹。
 3. **检查预览。**查看音轨、标签与封面；通过“**查找封面与标签**”比较发行版本，也可指定本地图片。高级设置按需使用。
 4. **点击“开始整理”。**查看专辑和 `Needs Review/Review.csv`；修正不确定的项目后，重跑到同一目标库即可更新或补全。
 
@@ -317,6 +322,7 @@ Organized/
 |---|---|
 | **目录与文件名** | 艺术家/专辑结构、歌名或轨号在前、资料字段、多碟目录或前缀、实时路径预览 |
 | **音频转换** | 编码、采样率策略、位深、声道、SWResample / SoXR、抖动、FLAC 压缩、MP3 CBR/VBR、AAC 码率 |
+| **音频精调** | SoXR HQ/VHQ/自定义精度，SWR Kaiser/Blackman–Nuttall/Cubic，cutoff、滤波参数、噪声整形、电平余量与 DSD 高级滤波 |
 | **条件规则** | 来源格式、码率、采样率、位深、声道、大小或是否无损；全部/任一满足；启停、复制与排序 |
 | **配置与预览** | 导入/导出设置、导出只读路径与转换计划 CSV；可复用配置不包含本地路径及媒体密钥 |
 | **外观与语言** | 浅色、深色、跟随系统；五种主题色；简体中文 / English |

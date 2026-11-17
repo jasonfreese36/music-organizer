@@ -1,4 +1,4 @@
-# Corresponding sources for v1.4.0 / 对应源码
+# Corresponding sources for v1.5.0 / 对应源码
 
 The release provides `MusicOrganizer-Source.zip` and `ThirdPartySources.zip` alongside the EXE. The former contains the application, visual UI, translation catalog, native Go reader (including vendored TEA), tests, build scripts and retained notices. The latter contains the source archives pinned by URL, revision and SHA-256 in `resources/ThirdPartySources.json`, including Mutagen, FFmpeg, SACD Extract, TagLib, ncmdump, relevant copyleft native libraries, their build recipes, and Python dependency source distributions. These packages preserve their original licenses; the original application's MIT license does not replace them.
 

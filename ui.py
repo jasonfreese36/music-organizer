@@ -205,6 +205,7 @@ def build_library(app, page):
     paths.grid(row=0,column=0,columnspan=2,sticky="ew",pady=(0,16))
     paths.grid_columnconfigure(1,weight=1)
     for row,(title,var,action) in enumerate(((tr('音乐来源'),app.source,app._browse_source),(tr('整理目标'),app.dest,app._browse_dest))):
+        row*=2
         label(paths,title,size=12,color=color('#91899F')).grid(row=row,column=0,padx=(20,15),pady=(16 if row==0 else 7, 7 if row==0 else 16),sticky="w")
         entry=ctk.CTkEntry(paths,textvariable=var,height=36,corner_radius=8,border_width=0,fg_color=color('#F7F7FB'),text_color=color('#625D78'),font=(FONT,12))
         entry.grid(row=row,column=1,sticky="ew",pady=(16 if row==0 else 7,7 if row==0 else 16))
@@ -212,6 +213,9 @@ def build_library(app, page):
         choose.grid(row=row,column=2,padx=(10,20),pady=(16 if row==0 else 7,7 if row==0 else 16))
         if row==0:app.src_entry,app.src_button=entry,choose
         else:app.dst_entry,app.dst_button=entry,choose
+    label(paths,variable=app.source_summary,size=11,color=MUTED).grid(row=1,column=1,sticky="w",pady=(0,6))
+    app.sources_button=button(paths,tr('管理来源'),app._manage_sources,width=94)
+    app.sources_button.grid(row=1,column=2,padx=(10,20),pady=(0,6))
     app.summary_files=tk.StringVar(value="—");app.summary_albums=tk.StringVar(value="—");app.summary_size=tk.StringVar(value="—")
     metrics=ctk.CTkFrame(page,fg_color="transparent")
     metrics.grid(row=1,column=0,columnspan=2,sticky="ew",pady=(0,16))

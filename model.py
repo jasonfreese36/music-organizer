@@ -3,6 +3,7 @@ import csv
 import hashlib
 import io
 import json
+import math
 import os
 import re
 import stat
@@ -19,7 +20,7 @@ from platform_formats import ENCRYPTED_EXTS
 
 
 APP_NAME = "Music Organizer"
-VERSION = "1.4.0"
+VERSION = "1.5.0"
 ALBUMS = "Albums"
 ARCHIVES = "Disc Archives"
 REVIEW = "Needs Review"
@@ -160,6 +161,38 @@ def validated_roots(source, dest):
     return src, out
 
 
+def source_roots(sources):
+    """Canonical, disjoint roots; the caller's order is the duplicate priority."""
+    if isinstance(sources, (str, os.PathLike)):
+        sources = [sources]
+    roots = []
+    for source in sources:
+        if not str(source).strip():
+            raise ValueError(tr('请选择至少一个源文件夹'))
+        root = Path(source).expanduser().resolve(strict=True)
+        if not root.is_dir():
+            raise ValueError(tr('源路径必须是目录'))
+        if root in roots:
+            continue
+        if any(root.is_relative_to(p) or p.is_relative_to(root) for p in roots):
+            raise ValueError(tr('源文件夹不能互相包含，请只添加最上层目录'))
+        roots.append(root)
+    if not roots:
+        raise ValueError(tr('请选择至少一个源文件夹'))
+    return tuple(roots)
+
+
+def validated_sources(sources, dest):
+    roots = source_roots(sources)
+    for root in roots:
+        _, out = validated_roots(root, dest)
+    return roots, out
+
+
+def source_label(root):
+    return component(root.name, 55) + " [" + short_hash(os.path.normcase(str(root))) + "]"
+
+
 def at(root, rel):
     rel = Path(rel)
     if rel.anchor or ".." in rel.parts:
@@ -227,6 +260,21 @@ class Item:
     error: str = ""
     edits: dict = field(default_factory=dict)
     crypto: dict = field(default_factory=dict)
+    root: Path | None = None
+    namespace: str = ""
+
+    @property
+    def source_root(self):
+        if self.root is not None:
+            return self.root
+        root = self.path
+        for _ in self.rel.parts:
+            root = root.parent
+        return root
+
+    @property
+    def library_rel(self):
+        return Path(self.namespace) / self.rel if self.namespace else self.rel
 
     def check(self):
         st = self.path.stat()
@@ -249,7 +297,7 @@ class Track:
 
     @property
     def source_group(self):
-        parent = self.source.rel.parent
+        parent = self.source.library_rel.parent
         if DISC_FOLDER.match(parent.name):
             parent = parent.parent
         return parent
@@ -257,7 +305,9 @@ class Track:
     @property
     def edit_key(self):
         # A mixed directory can contain several releases. Never apply one release's edits to all.
-        parent = self.source_group.name
+        local_group=self.source.rel.parent
+        if DISC_FOLDER.match(local_group.name):local_group=local_group.parent
+        parent = local_group.name
         generic = {"music", "albums", "album", "singles", "single", "flac", "mp3", "aac", "wav", "lossless", "recovered audio", "needs review", "audio", "tracks", "songs"}
         album = self.source.tags.get("album")
         if not album:
@@ -318,28 +368,57 @@ class Settings:
     apple_quality: str = "standard"
     apple_archive_mode: str = "none"
     apple_archive_folder: str = ""
+    resample_cutoff_enabled: bool = False
+    resample_cutoff: float = 98.0
+    soxr_precision: int = 28
+    soxr_cheby: bool = False
+    swr_filter_type: str = "kaiser"
+    swr_filter_size: int = 32
+    swr_phase_shift: int = 10
+    swr_kaiser_beta: float = 9.0
+    swr_exact_rational: bool = True
+    dither_scale: float = 1.0
+    gain_db: float = 0.0
+    downmix_normalize: bool = False
+    dsd_advanced: bool = False
+    dsd_pcm_bits: int = 24
+    dsd_gain_db: float = 0.0
+    dsd_lowpass_hz: int = 30000
+    dsd_lowpass_order: int = 4
+    dsd_remove_dc: bool = False
 
     def __post_init__(self):
-        for name in ("workers","sacd_rate","aac_kbps","sample_rate","pcm_bits","flac_compression","mp3_kbps","mp3_vbr","decrypt_workers"):
+        for name in ("workers","sacd_rate","aac_kbps","sample_rate","pcm_bits","flac_compression","mp3_kbps","mp3_vbr","decrypt_workers",
+                     "soxr_precision","swr_filter_size","swr_phase_shift","dsd_pcm_bits","dsd_lowpass_hz","dsd_lowpass_order"):
             if type(getattr(self,name)) is not int:raise ValueError(tr('{0} 需要整数').format(name))
-        for name in ("online","keep_sidecars","verify_pcm","reencode_lossy","recompress_flac","write_cover_file","write_playlists","decrypt_enabled","decrypt_verify"):
+        for name in ("online","keep_sidecars","verify_pcm","reencode_lossy","recompress_flac","write_cover_file","write_playlists","decrypt_enabled","decrypt_verify",
+                     "resample_cutoff_enabled","soxr_cheby","swr_exact_rational","downmix_normalize","dsd_advanced","dsd_remove_dc"):
             if type(getattr(self,name)) is not bool:raise ValueError(tr('{0} 需要开关值').format(name))
+        for name,lower,upper in (("resample_cutoff",80,99.7),("swr_kaiser_beta",2,16),("dither_scale",0,4),
+                                 ("gain_db",-24,6),("dsd_gain_db",-24,12)):
+            value=getattr(self,name)
+            if type(value) not in (int,float) or not math.isfinite(value) or not lower<=value<=upper:
+                raise ValueError(tr('{0} 必须是 {1} 到 {2} 之间的有限数值').format(name,lower,upper))
         object.__setattr__(self, "tag_sources", tuple(dict.fromkeys(self.tag_sources)))
         object.__setattr__(self, "cover_sources", tuple(dict.fromkeys(self.cover_sources)))
         if set(self.tag_sources) - {"musicbrainz", "itunes"} or set(self.cover_sources) - {"coverartarchive", "itunes"}:
             raise ValueError(tr('未知的标签或封面来源'))
-        if not 1 <= self.workers <= 16 or self.sacd_rate not in (88200, 176400):
+        if not 1 <= self.workers <= 16 or self.sacd_rate not in (44100,48000,88200,96000,176400,192000,352800,384000):
             raise ValueError(tr('并行数或 SACD 采样率无效'))
         if self.sacd_area not in ("stereo", "multi", "both") or not 96 <= self.aac_kbps <= 512:
             raise ValueError(tr('SACD 声道选项或 AAC 比特率无效'))
         if self.lossless_format not in ("flac", "mp3", "aac") or self.lossy_format not in ("preserve", "flac", "mp3", "aac"):
             raise ValueError(tr('输出格式必须为 FLAC、MP3 或 AAC'))
-        if self.resample_mode not in ("preserve", "limit", "fixed") or self.sample_rate not in (8000,16000,22050,24000,32000,44100,48000,88200,96000,176400,192000,352800,384000):
+        if self.resample_mode not in ("preserve", "limit", "fixed", "family") or self.sample_rate not in (8000,16000,22050,24000,32000,44100,48000,88200,96000,176400,192000,352800,384000):
             raise ValueError(tr('采样率设置无效'))
         if self.pcm_bits not in (0,16,24,32) or self.channels not in ("preserve","stereo","mono"):
             raise ValueError(tr('位深或声道设置无效'))
-        if self.resampler not in ("swr","soxr") or self.dither not in ("none","triangular","triangular_hp"):
+        if self.resampler not in ("swr","soxr") or self.dither not in ("none","rectangular","triangular","triangular_hp","shibata","low_shibata","high_shibata","lipshitz","f_weighted","modified_e_weighted","improved_e_weighted"):
             raise ValueError(tr('重采样或抖动设置无效'))
+        if not 15<=self.soxr_precision<=33 or self.swr_filter_type not in ("kaiser","blackman_nuttall","cubic") or not 4<=self.swr_filter_size<=256 or not 0<=self.swr_phase_shift<=16:
+            raise ValueError(tr('重采样滤波参数无效'))
+        if self.dsd_pcm_bits not in (16,24,32) or self.dsd_lowpass_hz!=0 and not 20000<=self.dsd_lowpass_hz<=100000 or self.dsd_lowpass_order not in (2,4,6,8):
+            raise ValueError(tr('DSD 高级转换参数无效'))
         if not 0 <= self.flac_compression <= 12 or self.mp3_mode not in ("vbr","cbr") or not 0 <= self.mp3_vbr <= 9 or self.mp3_kbps not in (64,96,128,160,192,224,256,320):
             raise ValueError(tr('FLAC 压缩级别或 MP3 编码设置无效'))
         if self.id3_version not in ("preserve","3","4") or self.multidisc not in ("subfolder","prefix","flat"):

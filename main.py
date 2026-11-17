@@ -13,7 +13,7 @@ def main():
     parser.add_argument("--language",choices=("zh_CN","en"))
     parser.add_argument("--organize", action="store_true")
     parser.add_argument("--scan", action="store_true")
-    parser.add_argument("--source", type=Path)
+    parser.add_argument("--source", type=Path,action="append",help="Source directory; repeat for multiple roots")
     parser.add_argument("--dest", type=Path)
     parser.add_argument("--offline", action="store_true")
     parser.add_argument("--workers", type=int)
@@ -44,7 +44,7 @@ def main():
         return 1 if "error" in result else 0
     if args.check_tools or args.scan or args.organize or args.test_sources or args.search_releases or args.preview:
         from media import Tools
-        from model import Cancel, Settings, validated_roots, write_atomic
+        from model import Cancel, Settings, validated_sources, write_atomic
         tools, cancel = Tools(), Cancel()
         result = {}
         report_allowed=True
@@ -83,10 +83,14 @@ def main():
                 from inventory import scan
                 if not args.source or not args.dest:
                     raise ValueError("--source and --dest are required")
-                source, dest = validated_roots(args.source, args.dest)
+                source, dest = validated_sources(args.source, args.dest)
+                if args.report and any(args.report.resolve().is_relative_to(root) for root in source):
+                    report_allowed=False
+                    raise ValueError(tr('诊断报告不能写入源文件夹'))
                 items, skipped = scan(source, tools, cancel, settings.workers,settings=settings)
                 result["scan"] = dict(files=len(items), skipped=skipped, audio=sum(i.kind == "audio" for i in items),
-                                      errors=[dict(path=str(i.rel), error=i.error) for i in items if i.error],encrypted=[dict(source=str(i.rel),**i.crypto) for i in items if i.crypto])
+                                      sources=[str(p) for p in source],
+                                      errors=[dict(path=str(i.library_rel), error=i.error) for i in items if i.error],encrypted=[dict(source=str(i.library_rel),**i.crypto) for i in items if i.crypto])
                 if args.organize:
                     from engine import Organizer
                     result["organize"] = Organizer(source, dest, items, settings, tools, cancel).run()

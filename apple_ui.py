@@ -55,7 +55,7 @@ class ApplePanel:
             settings=self.app._settings_value();self.summary.set(profile_description(settings))
             if device and self.app.source.get() and self.app.dest.get():
                 from pathlib import Path
-                records,archive=export_locations(Path(self.app.source.get()).resolve(),Path(self.app.dest.get()).resolve(),settings)
+                records,archive=export_locations(self.app._source_paths(),Path(self.app.dest.get()).resolve(),settings)
                 self.locations.set(tr('报告目录：')+str(records)+"\n"+(tr('原盘归档：')+str(archive) if archive else tr('不另存原盘；源文件保留。')))
             else:self.locations.set(tr('原盘目录、报告目录与设备导入目录必须彼此独立。'))
-        except (ValueError,tk.TclError) as exc:self.locations.set(str(exc))
+        except (ValueError,OSError,tk.TclError) as exc:self.locations.set(str(exc))

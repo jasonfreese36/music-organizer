@@ -17,7 +17,7 @@ from prepare import ROOT,RES,digest,prepare
 def source_files():
     for path in sorted(ROOT.iterdir()):
         if path.is_file() and (path.suffix in {".py",".md",".txt",".manifest"} or path.name in {"COPYING","LICENSE",".gitignore",".gitattributes"}):yield path
-    for folder in ("resources","native","docs",".github"):
+    for folder in ("resources","native","docs",".github","scripts"):
         for path in sorted((ROOT/folder).rglob("*")):
             if not path.is_file() or "__pycache__" in path.parts or path.suffix in {".pyc",".pyo"}:continue
             if folder=="resources" and "tools" in path.relative_to(RES).parts:continue

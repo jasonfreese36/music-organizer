@@ -36,6 +36,8 @@ These integration tests generate their own audio in fresh output directories. Th
 ```powershell
 .\.venv\Scripts\python.exe test_e2e.py --root test-output/e2e
 .\.venv\Scripts\python.exe test_advanced.py --root test-output/advanced
+.\.venv\Scripts\python.exe test_multisource.py --root test-output/multisource
+.\.venv\Scripts\python.exe test_audio_dsp.py --root test-output/audio-dsp
 .\.venv\Scripts\python.exe test_platforms.py --root test-output/platforms
 .\.venv\Scripts\python.exe test_apple.py --root test-output/apple
 .\.venv\Scripts\python.exe test_apple_discs.py --root test-output/apple-discs
@@ -59,3 +61,11 @@ An optional GitHub Actions workflow template is provided at [docs/ci/windows-tes
 ```
 
 The same flags work with a packaged `MusicOrganizer.exe`. Use `--settings Profile.json` to load an exported profile.
+
+Repeat `--source` to combine folders in one run:
+
+```powershell
+.\.venv\Scripts\python.exe main.py --organize --offline --source "D:\Rips" --source "E:\Downloads" --dest "F:\Library" --report Run.json
+```
+
+Sources are ordered and must be disjoint. Reports cannot be written inside a source. The GUI checks also exercise source-list editing, fractional DSP values, inactive-engine controls and first-run defaults. DSP measurements and the generated SACD extractor contract are described in the [audio tuning guide](AUDIO_TUNING.md).

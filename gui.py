@@ -32,6 +32,9 @@ HELP = tr('整理规则\n• 目标结构：Albums / Disc Archives / Needs Revie
 HELP = tr('v1.4 苹果设备与语言\n在高级设置 → 苹果设备中选择 iPod 或 iPhone/iPad。设备目录只保留兼容音轨；报告在旁边的 Records 目录，原盘默认不另存，也可选择独立归档目录。源文件始终保留。导入 Apple Music/iTunes 后再同步。\n在高级设置 → 外观中选择中文或 English，保存并重启。以下常规原盘备份规则针对默认曲库；设备模式以苹果设备设置为准。\n\n') + HELP
 
 
+HELP = tr('v1.5 多源文件夹与音频精调\n点击来源栏的“管理来源”添加、移除或排序多个文件夹，应用后重新只读扫描。相同音频跨来源去重，手选资料按各来源保存。\n高级设置 → 音频精调提供 SoXR 精度、SWR 滤波、cutoff、噪声整形、增益余量与 DSD 高级处理。自定义 cutoff 开启后初始为 98%，新选项按需启用。\n相同设置重跑可复用输出；修改 DSP 设置后从源文件重建。首次处理默认值保持原样。\n\n') + HELP
+
+
 class App(ctk.CTk):
     def __init__(self):
         ctk.set_appearance_mode("light")
@@ -52,6 +55,8 @@ class App(ctk.CTk):
         self.selections = {}
         self.network_results = {}
         self.source = tk.StringVar()
+        self.extra_sources = []
+        self.source_summary = tk.StringVar()
         self.dest = tk.StringVar()
         self.filter = tk.StringVar()
         self.status = tk.StringVar(value=tr('选择音乐源目录，开始只读扫描'))
@@ -75,7 +80,7 @@ class App(ctk.CTk):
         for field in dataclasses.fields(Settings):
             if field.name in legacy:continue
             value=getattr(defaults,field.name)
-            kind=tk.BooleanVar if isinstance(value,bool) else tk.IntVar if isinstance(value,int) else tk.StringVar
+            kind=tk.BooleanVar if isinstance(value,bool) else tk.IntVar if isinstance(value,int) else tk.DoubleVar if isinstance(value,float) else tk.StringVar
             self.advanced_values[field.name]=kind(value=value)
         self.custom_rules=[]
         self.busy, self.closing, self.scanned_source = False, False, None
@@ -87,6 +92,8 @@ class App(ctk.CTk):
         ctk.set_appearance_mode(self.appearance.get())
         self._styles()
         self._build()
+        self.source.trace_add("write",lambda *a:self._update_source_count())
+        self._update_source_count()
         for variable in (*self.tag_enabled.values(), *self.cover_enabled.values(), self.tag_priority, self.cover_priority):
             variable.trace_add("write", lambda *a:self._update_source_summary())
         self._update_source_summary()
@@ -121,6 +128,8 @@ class App(ctk.CTk):
         try:
             values = json.loads(self.config_path.read_text(encoding="utf-8"))
             self.source.set(values.get("source", ""))
+            extras=values.get("extra_sources",[])
+            if isinstance(extras,list) and all(isinstance(p,str) for p in extras):self.extra_sources=extras
             self.dest.set(values.get("dest", ""))
             for key in ("online", "verify", "sidecars", "workers", "country", "area", "rate", "bitrate"):
                 if key in values:
@@ -142,13 +151,25 @@ class App(ctk.CTk):
 
     def _save(self):
         values = {key: getattr(self, key).get() for key in ("source", "dest", "online", "verify", "sidecars", "workers", "country", "area", "rate", "bitrate")}
-        values.update(tag_sources=self._ordered_sources(self.tag_enabled,self.tag_priority),cover_sources=self._ordered_sources(self.cover_enabled,self.cover_priority),
-                      advanced={k:v.get() for k,v in self.advanced_values.items()},rules=self.custom_rules,
+        values.update(extra_sources=self.extra_sources,tag_sources=self._ordered_sources(self.tag_enabled,self.tag_priority),cover_sources=self._ordered_sources(self.cover_enabled,self.cover_priority),
+                      advanced={k:self.getvar(v._name) for k,v in self.advanced_values.items()},rules=self.custom_rules,
                       appearance=self.appearance.get(),accent=self.accent.get(),language=self.language.get())
         write_atomic(self.config_path, json.dumps(values, ensure_ascii=False, indent=2).encode("utf-8"))
 
     def _profile_path(self):
-        return state_dir() / "Profiles" / (short_hash(str(Path(self.source.get()).resolve())) + ".json")
+        from source_profiles import profile_path
+        return profile_path(self.source.get(),state_dir()/"Profiles")
+
+    def _source_paths(self):
+        return ([self.source.get()] if self.source.get().strip() else [])+list(self.extra_sources)
+
+    def _update_source_count(self):
+        self.source_summary.set(tr('{0} 个源文件夹 · 合并整理到同一目标库').format(len(self._source_paths())))
+
+    def _manage_sources(self):
+        if not self.busy:
+            from source_ui import manage_sources
+            manage_sources(self)
 
     def _restart_language(self):
         if self.busy or not self.advanced.rules.commit_pending():return
@@ -163,20 +184,12 @@ class App(ctk.CTk):
         self.destroy()
 
     def _load_profile(self):
-        self.overrides, self.cover_overrides, self.selections = {}, {}, {}
-        try:
-            values = json.loads(self._profile_path().read_text(encoding="utf-8"))
-            self.overrides, self.cover_overrides = values.get("tags", {}), values.get("covers", {})
-            self.selections=values.get("selections",{})
-            track_tags = values.get("tracks", {})
-            self.items = [dataclasses.replace(i, tags=i.tags | track_tags.get(str(i.rel), {}), edits=track_tags.get(str(i.rel), {})) for i in self.items]
-        except (ValueError, OSError):
-            pass
+        from source_profiles import load_profiles
+        self.items,self.overrides,self.cover_overrides,self.selections=load_profiles(self.items,state_dir()/"Profiles")
 
     def _save_profile(self):
-        write_atomic(self._profile_path(), json.dumps(dict(tags=self.overrides, covers=self.cover_overrides,
-                                                         selections=self.selections,
-                                                         tracks={str(i.rel): i.edits for i in self.items if i.edits}), ensure_ascii=False, indent=2).encode("utf-8"))
+        from source_profiles import save_profiles
+        save_profiles(self.items,state_dir()/"Profiles",self.overrides,self.cover_overrides,self.selections)
 
     def _browse_source(self):
         path = filedialog.askdirectory(title=tr('选择音乐源目录'), initialdir=self.source.get() or None)
@@ -193,11 +206,22 @@ class App(ctk.CTk):
             self.dest.set(path)
 
     def _settings_value(self):
+        advanced={}
+        for key,variable in self.advanced_values.items():
+            if isinstance(variable,tk.IntVar):
+                # IntVar.get() silently truncates decimal strings; preserve the
+                # strict integer contract for editable DSP number fields.
+                raw=self.getvar(variable._name)
+                try:value=int(raw) if isinstance(raw,str) else raw
+                except (ValueError,TypeError):raise ValueError(tr('{0} 需要整数').format(key)) from None
+                if type(value) is not int:raise ValueError(tr('{0} 需要整数').format(key))
+                advanced[key]=value
+            else:advanced[key]=variable.get()
         return Settings(online=self.online.get(), workers=self.workers.get(), country=self.country.get(),
                         keep_sidecars=self.sidecars.get(), verify_pcm=self.verify.get(), sacd_area=self.area.get(),
                         sacd_rate=self.rate.get(), aac_kbps=self.bitrate.get(),
                         tag_sources=self._ordered_sources(self.tag_enabled,self.tag_priority),cover_sources=self._ordered_sources(self.cover_enabled,self.cover_priority),
-                        **{k:v.get() for k,v in self.advanced_values.items()},rules=tuple(self.custom_rules))
+                        **advanced,rules=tuple(self.custom_rules))
 
     def _ordered_sources(self,mapping,priority):
         selected=[key for key,variable in mapping.items() if variable.get()]
@@ -290,7 +314,7 @@ class App(ctk.CTk):
             try:
                 from formats import parse_cue,resolve_cue_file
                 _,parts=parse_cue(item.path)
-                refs={resolve_cue_file(item.path,p.file,self.scanned_source) for p in parts}
+                refs={resolve_cue_file(item.path,p.file,item.source_root) for p in parts}
                 members += [i for i in self.items if i.path in refs and i not in members]
             except (ValueError,OSError):pass
         return members
@@ -328,7 +352,8 @@ class App(ctk.CTk):
 
     def _scan(self):
         try:
-            source, dest = validated_roots(self.source.get(), self.dest.get())
+            from model import validated_sources
+            source, dest = validated_sources(self._source_paths(), self.dest.get())
             settings = self._settings_value()
         except Exception as exc:
             messagebox.showerror(tr('无法扫描'), str(exc), parent=self)
@@ -348,7 +373,8 @@ class App(ctk.CTk):
         if not self.advanced.rules.commit_pending():
             self.show_page("settings");self.advanced.tabs.set(tr('条件规则'));return
         try:
-            source, dest = validated_roots(self.source.get(), self.dest.get())
+            from model import validated_sources
+            source, dest = validated_sources(self._source_paths(), self.dest.get())
             if source != self.scanned_source:
                 raise ValueError(tr('源目录已改变，请先重新扫描'))
             if self.lookup_panel.dirty and self.lookup_panel.items:self.lookup_panel.apply()
@@ -391,7 +417,7 @@ class App(ctk.CTk):
         self._start(perform,tr('正在重新核对平台音频的本地密钥…'))
 
     def _state(self):
-        for widget in (self.scan_button, self.src_entry, self.dst_entry, self.src_button, self.dst_button,
+        for widget in (self.scan_button, self.src_entry, self.dst_entry, self.src_button, self.dst_button,self.sources_button,
                        self.edit_button, self.cover_button, self.lookup_button, self.check_button, self.test_sources_button,
                        *(c['button'] for c in self.source_cards.values()), *self.setting_widgets):
             widget.configure(state="disabled" if self.busy else "readonly" if isinstance(widget, (ttk.Combobox,ctk.CTkComboBox)) else "normal")
@@ -400,6 +426,7 @@ class App(ctk.CTk):
         self.lookup_panel.refresh_buttons()
         self.advanced.rules.set_busy(self.busy)
         self.advanced.apple_panel.refresh()
+        self.advanced.dsp_panel.refresh()
 
     def _cancel(self):
         self.cancel.stop()
@@ -419,7 +446,7 @@ class App(ctk.CTk):
             tags = self.effective_tags(item)
             if query:
                 from model import match_name
-                corpus=str(item.rel)+" "+" ".join(tags.values())
+                corpus=str(item.library_rel)+" "+" ".join(tags.values())
                 if query not in corpus.casefold() and match_name(query) not in match_name(corpus):continue
             self.preview.insert("", "end", iid=str(index), values=(tags.get("title", item.path.name), tags.get("artist", ""),
                                 tags.get("album", item.rel.parent.name), item.profile.codec.upper() if item.profile else item.crypto.get("name",item.kind.upper()),
@@ -453,7 +480,7 @@ class App(ctk.CTk):
         metadata=selected.get('metadata',{}).get('provider')
         artwork=selected.get('cover',{}).get('provider')
         self.selection_sources.set(tr('标签 · {0}\n封面 · {1}').format(SOURCES.get(metadata, {}).get('name', tr('本地资料')), SOURCES.get(artwork, {}).get('name', tr('本地优先'))))
-        self.detail.set(tr('{0}\n\n发行  {1}\n轨序 {2}  ·  碟序 {3}\n\n{4}').format(tags.get('artist', '—'), tags.get('date') or tr('待补充'), tags.get('tracknumber', '—'), tags.get('discnumber', '—'), item.rel)+(tr('\n\n读取问题：{0}').format(item.error[:180]) if item.error else ""))
+        self.detail.set(tr('{0}\n\n发行  {1}\n轨序 {2}  ·  碟序 {3}\n\n{4}').format(tags.get('artist', '—'), tags.get('date') or tr('待补充'), tags.get('tracknumber', '—'), tags.get('discnumber', '—'), item.library_rel)+(tr('\n\n读取问题：{0}').format(item.error[:180]) if item.error else ""))
         if item.crypto:
             from platform_audio import STATUS
             self.detail.set(self.detail.get()+f"\n\n{item.crypto.get('name', '')} · {item.crypto.get('version', '')}\n{STATUS.get(item.crypto.get('state'), tr('待处理'))}\n{item.crypto.get('detail', '')}")
@@ -546,7 +573,7 @@ class App(ctk.CTk):
                     self.progress.configure(value=done/max(1, total)*100)
                 elif kind == "scanned":
                     source, self.items, skipped = value
-                    self.item_by_rel={str(item.rel):i for i,item in enumerate(self.items)}
+                    self.item_by_rel={str(item.library_rel):i for i,item in enumerate(self.items)}
                     self.scanned_source = source
                     self._load_profile()
                     self._show_items()

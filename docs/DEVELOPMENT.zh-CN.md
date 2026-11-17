@@ -36,6 +36,8 @@ py -3.14 -m venv .venv
 ```powershell
 .\.venv\Scripts\python.exe test_e2e.py --root test-output/e2e
 .\.venv\Scripts\python.exe test_advanced.py --root test-output/advanced
+.\.venv\Scripts\python.exe test_multisource.py --root test-output/multisource
+.\.venv\Scripts\python.exe test_audio_dsp.py --root test-output/audio-dsp
 .\.venv\Scripts\python.exe test_platforms.py --root test-output/platforms
 .\.venv\Scripts\python.exe test_apple.py --root test-output/apple
 .\.venv\Scripts\python.exe test_apple_discs.py --root test-output/apple-discs
@@ -59,3 +61,11 @@ py -3.14 -m venv .venv
 ```
 
 打包后的 EXE 支持相同参数。使用 `--settings Profile.json` 读取导出的配置。
+
+重复使用 `--source` 可一次合并多个来源：
+
+```powershell
+.\.venv\Scripts\python.exe main.py --organize --offline --source "D:\Rips" --source "E:\Downloads" --dest "F:\Library" --report Run.json
+```
+
+来源按列表顺序处理，不能互相包含；诊断报告不能写入任何源目录。GUI 自检还会检查来源列表、小数 DSP 参数、无关引擎控件禁用和首次默认值。音频频响测量及生成的 SACD 提取边界测试见[音频精调说明](AUDIO_TUNING.zh-CN.md)。
